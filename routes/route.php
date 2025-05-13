@@ -39,6 +39,6 @@ class Route
 
     public function redirect($arquivo, $data, $msg)
     {
-        require $arquivo . '.php';
+        require './view/' . $arquivo . '.php';
     }
 }
