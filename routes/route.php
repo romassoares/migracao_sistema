@@ -1,44 +1,28 @@
 <?php
-
-require_once  __DIR__ . '/../app/Portal.php';
-require_once  __DIR__ . '/../app/Empresa.php';
-require_once  __DIR__ . '/../app/Imovel.php';
+include_once __DIR__ . ('/../database/db.php');
+include_once __DIR__ . ('/../app/Auth/auth.php');
+include_once __DIR__ . ('/../app/core/methods.php');
 require_once __DIR__ . '/../helpers/helpers.php';
 include_once __DIR__ . '/../session.php';
 include_once __DIR__ . '/../vars.php';
 
-class Route
+
+$method = $_SERVER['REQUEST_METHOD'];
+$uri = $_SERVER['REQUEST_URI'];
+
+if (!isAuthenticated())
+    return redirect('auth/login');
+
+if (!companySelected())
+    return redirect('auth/selectCompany');
+
+return redirect('dashboard');
+
+function redirect($arquivo, $data = [], $msg = '')
 {
-
-    public function __construct() {}
-
-    public function index()
-    {
-        $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-
-        if (isset($_GET['crp']) && !empty($_GET['crp'])) {
-
-            $crp = $_GET['crp'];
-            $crp = base64_decode($crp);
-            // adicionando função com password
-            $json_string = decryptData($crp, getPassword());
-            $array_parametros = json_decode($json_string, true);
-            if (empty($array_parametros['trb_codigo_infoideias'])) {
-                $_SESSION['msg'] = "Código infoideias não encontrado. Faça login novamente";
-            } else {
-                $_SESSION['trb_codigo_infoideias'] = $array_parametros['trb_codigo_infoideias'];
-                $_SESSION['trb_id_operador_envio'] = $array_parametros['trb_id_operador_envio'];
-                $_SESSION['trb_nome_operador_envio'] = $array_parametros['trb_nome_operador_envio'];
-
-                $_SESSION['ambiente'] = $array_parametros['ambiente'];
-            }
-        }
-
-        echo "Página não encontrada";
+    if (!isAuthenticated()) {
+        require './views/auth/login.php';
+        return;
     }
-
-    public function redirect($arquivo, $data, $msg)
-    {
-        require './view/' . $arquivo . '.php';
-    }
+    require './views/' . $arquivo . '.php';
 }
