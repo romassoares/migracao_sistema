@@ -1,2 +1,2 @@
-# Ignorar vars.php
-vars.php
+# Ignorar env
+.env

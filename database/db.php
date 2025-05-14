@@ -2,25 +2,23 @@
 
 date_default_timezone_set('America/Sao_Paulo');
 
-require_once __DIR__ . '/../vars.php';
-
 class DB
 {
     private static $mysqli;
 
     public function connect($database)
     {
-        $db_vars = db_vars($database);
-
-        if (!isset($db_vars)) {
-            throw new Exception("Database '$database' not found.");
+        if ($database == 'migracao') {
+            $host = DB_HOST_MIGRACAO;
+            $user = DB_USERNAME_MIGRACAO;
+            $pass = DB_PASSWORD_MIGRACAO;
+            $name = DB_DATABASE_MIGRACAO;
+        } else {
+            // $host = DB_HOST_MIGRACAO;
+            // $user = DB_USERNAME_MIGRACAO;
+            // $pass = DB_PASSWORD_MIGRACAO;
+            // $name = DB_DATABASE_MIGRACAO;
         }
-
-        $config = $db_vars;
-        $host = $config['host'];
-        $user = $config['user'];
-        $pass = $config['pass'];
-        $name = $config['name'];
 
         try {
             if (is_null(self::$mysqli)) {
