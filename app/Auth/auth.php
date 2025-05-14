@@ -9,42 +9,45 @@ function isAuthenticated()
 
 function login()
 {
-    $_SESSION['logged'] = true;
+    // $_SESSION['logged'] = false;
     // redirect('auth/selectCompany');
-    return;
+    // return;
     global $db;
 
-    dd('login function');
+    // dd('login function');
     $data['user'] = filter_input(INPUT_POST, 'user', FILTER_SANITIZE_SPECIAL_CHARS);
 
     if (filter_var($data['user'], FILTER_SANITIZE_SPECIAL_CHARS)) {
 
         $data['password'] = filter_input(INPUT_POST, 'password', FILTER_SANITIZE_SPECIAL_CHARS);
 
-        $sql = 'SELECT * FROM table_name WHERE user=? AND password=? LIMIT 1';
+        $sql = 'SELECT * FROM usuarios WHERE login_usuario=? AND password_usuario=? LIMIT 1';
 
-        $mysqli = $db->connect('midas_caminho');
-        if ($stmt = $mysqli->prepare($sql)) {
-            $stmt->bind_param('si', [$data['user'], $data['password']]);
+        $mysqli = $db->connect('migracao');
+        $stmt = $mysqli->prepare($sql);
+        // if ($stmt = $mysqli->prepare($sql)) {
+        // notdie('entrou');
+        $stmt->bind_param('ss', $data['user'], $data['password']);
+        // dd($stmt->execute());
+        if ($stmt->execute()) {
+            // notdie('execute');
 
-            if ($stmt->execute()) {
+            $user = $stmt->fetch();
+            if ($user) {
+                $_SESSION['user'] = $user;
+                // $_SESSION['user'] = [];
+                $_SESSION['logged'] = true;
 
-                $user = $stmt->fetch();
-                if ($user) {
-                    $_SESSION['user'] = $user;
-                    // $_SESSION['user'] = [];
-                    $_SESSION['logged'] = true;
-
-                    $route->redirect('auth/selectCompany');
-                } else {
-                    $route->redirect('auth/login');
-                }
+                return redirect('auth/selectCompany');
             } else {
-                $route->redirect('auth/login');
+                return redirect('auth/login');
             }
+        } else {
+            redirect('auth/login');
         }
+        // }
     } else {
-        $route->redirect('auth/login');
+        redirect('auth/login');
     }
 }
 

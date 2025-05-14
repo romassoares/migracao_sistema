@@ -37,18 +37,16 @@ function db_vars($banco)
         ];
     }
 
-    // if ($banco == 'portais') {
-    //     if ($_SESSION['ambiente'] == 'D') {
-    //         require __DIR__ . '/../../conexao_teste/conexaodados portais.php';
-    //     } else {
-    //         require __DIR__ . '/../../conexao/conexaodados portais.php';
-    //     }
+    if ($banco == 'migracao') {
+        // banco: sistema_migracao_dev
+        // usuario: sistmigdev
+        // pxd: 8)uytf%r2Q3s
 
-    //     return  [
-    //         'host' => $host_p,
-    //         'user' => $username_p,
-    //         'pass' => $password_p,
-    //         'name' => $database_p,
-    //     ];
-    // }
+        return  [
+            'host' => '192.254.74.102',
+            'user' => 'sistmigdev',
+            'pass' => '8)uytf%r2Q3s',
+            'name' => 'sistema_migracao_dev',
+        ];
+    }
 }

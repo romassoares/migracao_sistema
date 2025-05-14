@@ -10,11 +10,11 @@ include_once __DIR__ . '/../vars.php';
 $method = $_SERVER['REQUEST_METHOD'];
 $uri = $_SERVER['REQUEST_URI'];
 
-if (!isAuthenticated())
-    return redirect('auth/login');
+// if (!isAuthenticated())
+//     return redirect('auth/login');
 
-if (!companySelected())
-    return redirect('auth/selectCompany');
+// if (!companySelected())
+//     return redirect('auth/selectCompany');
 
 return redirect('dashboard');
 
