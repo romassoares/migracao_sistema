@@ -1,46 +1,46 @@
 <?php
+include_once './database/db.php';
+
+$db = new DB();
 
 // -------------------------------------------------------------------------------
-function metodo_get($sql)
+function metodo_get($sql, $database)
 {
-    global $clienteDB;
+    global $db;
 
-    if ($clienteDB->connect_error)
-        retorno(500, false, 'Database connection error: ' . $clienteDB->connect_error);
-
-    $query = $clienteDB->query($sql);
+    $query = $db->connect($database)->query($sql);
 
     if ($query === false)
-        retorno(400, false, strval($clienteDB->error));
+        retorno(400, false, strval($db->connect($database)->error));
 
     return (object) $query->fetch_assoc();
 }
 
 // -------------------------------------------------------------------------------
-function metodo_all($sql)
+function metodo_all($sql, $database)
 {
-    global $clienteDB;
+    global $db;
 
-    if ($clienteDB->connect_error)
-        retorno(500, false, 'Database connection error: ' . $clienteDB->connect_error);
+    if ($db->connect($database)->connect_error)
+        die('Database connection error: ' . $db->connect($database)->connect_error);
 
-    $query = $clienteDB->query($sql);
+    $query = $db->connect($database)->query($sql);
 
     if ($query === false)
-        retorno(500, false, strval($clienteDB->error));
+        die(strval($db->connect($database)->error));
 
     return (object) $query->fetch_all(MYSQLI_ASSOC);
 }
 
 // -------------------------------------------------------------------------------
-function insert_update($sql, $binds, $data)
+function insert_update($sql, $binds, $data, $database)
 {
-    global $clienteDB;
+    global $db;
 
-    $stmt = $clienteDB->prepare($sql);
+    $stmt = $db->connect($database)->prepare($sql);
 
     if (!$stmt)
-        retorno(500, false, 'Failed to prepare statement in insert or update: ' . $clienteDB->error);
+        die('Failed to prepare statement in insert or update: ' . $db->connect($database)->error);
 
     $params = [];
     foreach ($data as &$value)
@@ -55,7 +55,7 @@ function insert_update($sql, $binds, $data)
     if ($stmt->errno == 1062)
         retorno(200, false, 'Erro" O item já está cadastrado');
 
-    $lastInsertId = $clienteDB->insert_id;
+    $lastInsertId = $db->connect($database)->insert_id;
 
     $stmt->close();
 
@@ -63,10 +63,3 @@ function insert_update($sql, $binds, $data)
 }
 
 // -------------------------------------------------------------------------------
-
-function retorno($status_code, $status_response, $msg_response)
-{
-    http_response_code($status_code);
-    echo json_encode(['status' => $status_response, 'msg' => $msg_response]);
-    exit;
-}
