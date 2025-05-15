@@ -36,6 +36,12 @@ switch ($uri) {
     case '/layout/index':
         redirect('layout/index');
         break;
+    case '/layout/store':
+        redirect('layout/store');
+        break;
+    case '/layout/update':
+        redirect('layout/update');
+        break;
     case '/concorrente/index':
         redirect('concorrente/index');
         break;

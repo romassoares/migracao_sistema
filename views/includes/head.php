@@ -26,4 +26,5 @@ if (isset($_SESSION['logged']))
 
 </head>
 
-<?php include_once __DIR__ . './menu_lateral.php' ?>
+<body>
+    <?php include_once __DIR__ . './menu_lateral.php' ?>

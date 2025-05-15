@@ -1,6 +1,6 @@
 <?php include_once __DIR__ . './includes/head.php' ?>
 
-<div class="col py-3" id="conteudo">
+<div style="width: auto;" class="col-auto col-md-9 col-xl-10 px-sm-10 px-0 bg-light" id="conteudo">
 
 </div>
 
