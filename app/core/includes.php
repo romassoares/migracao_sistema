@@ -1,4 +1,5 @@
 <?php
 
-include_once './app/core/load_env.php';
-include_once './app/core/methods.php';
+include_once __DIR__ . '/load_env.php';
+include_once __DIR__ . '/methods.php';
+include_once __DIR__ . '/functions.php';

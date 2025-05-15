@@ -1,7 +1,7 @@
 <?php
 
-$path = './.env';
-
+$path = __DIR__ . '/../../.env';
+// var_dump(scandir($path));
 if (!file_exists($path)) {
     throw new Exception(".env file not found");
 }

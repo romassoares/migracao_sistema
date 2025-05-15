@@ -1,12 +1,18 @@
 <?php
 include_once __DIR__ . ('/../app/core/includes.php');
-include_once __DIR__ . ('/../database/db.php');
 include_once __DIR__ . ('/../app/Auth/auth.php');
 require_once __DIR__ . '/../helpers/helpers.php';
 include_once __DIR__ . '/../session.php';
+include_once __DIR__ . '/../routes/navigate.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $uri = $_SERVER['REQUEST_URI'];
+
+$uri = parse_url($uri, PHP_URL_PATH);
+
+$uri = trim($uri, '/');
+
+$uri = str_replace('migracao_sistema', '', $uri);
 
 // if (!isAuthenticated())
 //     return redirect('auth/login');
@@ -14,23 +20,26 @@ $uri = $_SERVER['REQUEST_URI'];
 // if (!companySelected())
 //     return redirect('auth/selectCompany');
 
+// notdie($uri);
+// if (strpos($uri, $_SESSION['rota_atual']) === 0) {
+//     $uri = substr($uri, strlen($_SESSION['rota_atual']));
+//     $uri = ltrim($uri, '/'); // remove a barra inicial se existir
+// }
+// dd($uri);
 
 $_SESSION['logged'] = true;
-$sql = "SELECT * FROM clientes LIMIT 1";
-$cliente = metodo_get($sql, 'migracao');
 
-$sql = "SELECT * FROM usuarios LIMIT 1";
-$usuario = metodo_get($sql, 'migracao');
-
-return redirect('dashboard', ['cliente' => $cliente, 'usuario' => $usuario]);
-
-function redirect($arquivo, $data = [], $msg = '')
-{
-
-    // monta_objetos($data);
-    if (!isAuthenticated()) {
-        require './views/auth/login.php';
-        return;
-    }
-    require './views/' . $arquivo . '.php';
+switch ($uri) {
+    case '':
+        redirect('dashboard/index');
+        break;
+    case '/layout/index':
+        redirect('layout/index');
+        break;
+    case '/concorrente/index':
+        redirect('concorrente/index');
+        break;
+    default:
+        die('view not found');
+        break;
 }
