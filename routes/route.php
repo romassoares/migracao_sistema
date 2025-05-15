@@ -33,6 +33,7 @@ switch ($uri) {
     case '':
         redirect('dashboard/index');
         break;
+    // ==============================================
     case '/layout/index':
         redirect('layout/index');
         break;
@@ -42,9 +43,17 @@ switch ($uri) {
     case '/layout/update':
         redirect('layout/update');
         break;
+    // ==============================================
     case '/concorrente/index':
         redirect('concorrente/index');
         break;
+    case '/concorrente/store':
+        redirect('concorrente/store');
+        break;
+    case '/concorrente/update':
+        redirect('concorrente/update');
+        break;
+    // ==============================================
     default:
         die('view not found');
         break;

@@ -50,6 +50,7 @@
 <?php include_once __DIR__ . '/../includes/scripts.php' ?>
 <script>
     function setFieldsForUpdate(id, value) {
+        window.scrollTo(0, 0)
         document.querySelector("#id").value = id
         document.querySelector("#nome").value = value
 
