@@ -77,3 +77,39 @@ function validateRequest($data_post, $regras)
         'erros' => $erros,
     ];
 }
+
+function trata_group_concat($data, $campo)
+{
+    // GROUP_CONCAT(
+    // 	CONCAT(
+    //         'id_log_orulo_tipologia@@', IFNULL(logs.id_log_orulo_tipologia,''),
+    //        '##data_alteracao@@', IFNULL(DATE_FORMAT(logs.data_alteracao, '%d/%m/%Y %H:%i:%s'),''), 
+    //        )
+    //        ORDER BY logs.data_alteracao DESC 
+    //        SEPARATOR ' || '
+    //    ) AS logs_alteracoes
+    // $campo = logs_alteracoes
+    $resultado = [];
+    // dd($data);
+    // foreach ($data as $row) {
+    $resultArray = [];
+    // if (!empty($row[$campo])) {
+    $items = explode(' || ', $data[0]);
+    foreach ($items as $item) {
+        $item = trim($item);
+        $keyValuePairs = explode('##', $item);
+        $aux = [];
+        foreach ($keyValuePairs as $pair) {
+            if (strpos($pair, '@@') !== false) {
+                list($key, $value) = explode('@@', $pair, 2);
+                $aux[$key] = $value;
+            }
+        }
+        $resultArray[] = $aux;
+    }
+    // }
+    $row[$campo] = $resultArray;
+    $resultado[] = $row;
+    // }
+    return $resultado[0][$campo];
+}

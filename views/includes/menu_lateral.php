@@ -24,7 +24,9 @@
                         </li>
                         <li class="nav-item d-flex">
                             <a href="concorrente/index" class="nav-link px-0"> <span class="d-none d-sm-inline">Concorrentes</span> </a>
-                            <!-- <a onclick="routing('concorrentes/index.php')" class="nav-link px-0"> <span class="d-none d-sm-inline">Concorrentes</span> </a> -->
+                        </li>
+                        <li class="nav-item d-flex">
+                            <a href="layout_colunas/index" class="nav-link px-0"> <span class="d-none d-sm-inline">Layout colunas</span> </a>
                         </li>
 
 

@@ -37,6 +37,9 @@
                                     <div class="d-flex">
                                         <button onclick="setFieldsForUpdate('<?php echo $layout['id'] ?>','<?php echo $layout['nome'] ?>')" class="btn btn-primary"><i class="bi bi-pencil"></i></button>
                                     </div>
+                                    <div class="d-flex">
+                                        <a href="layout_colunas/index?id=<?php echo $layout['id'] ?>" class="btn btn-primary">atualizar colunas</a>
+                                    </div>
                                 </td>
                             </tr>
                         <?php } ?>

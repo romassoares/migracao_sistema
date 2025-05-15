@@ -54,6 +54,19 @@ switch ($uri) {
         redirect('concorrente/update');
         break;
     // ==============================================
+    case '/layout_colunas/index':
+        redirect('layout_colunas/index');
+        break;
+    case '/layout_colunas/edit':
+        redirect('layout_colunas/edit');
+        break;
+    case '/layout_colunas/store':
+        redirect('layout_colunas/store');
+        break;
+    case '/layout_colunas/update':
+        redirect('layout_colunas/update');
+        break;
+    // ==============================================
     default:
         die('view not found');
         break;
