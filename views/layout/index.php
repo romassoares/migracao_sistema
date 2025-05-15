@@ -50,7 +50,6 @@
 <?php include_once __DIR__ . '/../includes/scripts.php' ?>
 <script>
     function setFieldsForUpdate(id, value) {
-        // console.log(id, value)
         document.querySelector("#id").value = id
         document.querySelector("#nome").value = value
 
@@ -58,7 +57,6 @@
         var current_action = el_form.getAttribute('action');
         var new_action = current_action.replace('store', 'update');
         el_form.setAttribute('action', new_action);
-        console.log(el_form.getAttribute('action'));
     }
 </script>
 

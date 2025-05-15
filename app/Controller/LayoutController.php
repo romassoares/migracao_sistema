@@ -5,8 +5,10 @@ include_once(__DIR__ . '/../../routes/navigate.php');
 function index()
 {
     $sql = 'SELECT * FROM layout';
+
     $layouts = metodo_all($sql, 'migracao');
-    return view(['view' => 'layout/index', 'data' => ['layouts' => $layouts]]);
+
+    return ['view' => 'layout/index', 'data' => ['layouts' => $layouts], 'function' => ''];
 }
 
 function store()
@@ -23,7 +25,7 @@ function store()
 
     insert_update($sql, "ss", $dados, 'migracao');
 
-    return route('layout/index');
+    return ['view' => '', 'data' => [], 'function' => 'index'];
 }
 
 function update()
@@ -40,5 +42,5 @@ function update()
 
     insert_update($sql, "si", [$dados['nome'], $dados['id']], 'migracao');
 
-    return route('layout/index');
+    return ['view' => '', 'data' => [], 'function' => 'index'];
 }

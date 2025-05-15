@@ -15,18 +15,21 @@ function redirect($modulo)
     if (!file_exists($arquivo_controller_exist)) {
         var_dump('Controller não existe em: ' . $arquivo_controller_exist . 'Controller.php');
     }
-
+    // notdie('antes include');
     include $arquivo_controller_exist;
+    // notdie('depois include');
 
     if (!function_exists($explode[1])) {
         var_dump('função não existe em: ' . ucfirst($explode[0]) . 'Controller.php');
     }
 
-    return $explode[1]();
-}
+    $retorno = $explode[1]();
 
-function view($retorno)
-{
+    if (!empty($retorno['function'])) {
+        header('Location:' . $retorno['function']);
+        exit;
+    }
+
     foreach ($retorno['data'] as $chave => $valor) {
         $$chave = $valor;
     }
@@ -34,9 +37,4 @@ function view($retorno)
     $pagina = __DIR__ . '/../views/' . $retorno['view'] . '.php';
 
     require $pagina;
-}
-
-function route($modulo)
-{
-    redirect($modulo);
 }
