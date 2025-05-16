@@ -38,7 +38,7 @@ function update()
 
     $dados = $request['dados'];
 
-    $sql = "UPDATE layout SET nome = ? WHERE id = ?";
+    $sql = "UPDATE layout SET nome = ? WHERE id = ? ORDER BY nome ASC";
 
     insert_update($sql, "si", [$dados['nome'], $dados['id']], 'migracao');
 

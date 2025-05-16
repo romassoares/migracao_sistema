@@ -5,27 +5,14 @@
         Layouts
     </div>
     <div class="card-body">
-        <div class="d-flex justify-content-end">
-            <button class="btn btn-primary">NOVO</button>
-        </div>
         <div class="d-flex">
-            <div class=" card col-4 p-2">
-                <form id="id_form" action="layout/store" method="post">
-                    <input type="hidden" name="id" id="id">
-                    <div class="d-flex">
-                        <input type="text" id="nome" name="nome" class="form-control">
-                        <button type="submit" class="btn btn-primary">salvar</button>
-                    </div>
-                </form>
-            </div>
-
-            <div class="card col-8 mx-2 p-2">
-                <table id="table_layout">
+            <div class="card col-12 mx-2 p-2">
+                <table id="table_layout" class="table table-striped">
                     <thead>
                         <tr>
-                            <th>#</th>
+                            <th data-orderable='false'>#</th>
                             <th>Nome</th>
-                            <th>Ações</th>
+                            <th data-orderable='false'>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -34,11 +21,9 @@
                                 <td><?php echo $layout['id'] ?></td>
                                 <td><?php echo $layout['nome'] ?></td>
                                 <td>
+
                                     <div class="d-flex">
-                                        <button onclick="setFieldsForUpdate('<?php echo $layout['id'] ?>','<?php echo $layout['nome'] ?>')" class="btn btn-primary"><i class="bi bi-pencil"></i></button>
-                                    </div>
-                                    <div class="d-flex">
-                                        <a href="layout_colunas/index?id=<?php echo $layout['id'] ?>" class="btn btn-primary">atualizar colunas</a>
+                                        <a href="layout_colunas/index?id=<?php echo $layout['id'] ?>" class="btn btn-primary btn-sm"><i class="bi bi-pencil"></i></a>
                                     </div>
                                 </td>
                             </tr>
@@ -50,18 +35,62 @@
     </div>
 </div>
 
+<div class="modal fade" id="modal_form">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class=""><b>Novo Layout</b></h6>
+                <span class="btn-close" id="btn_modal_close" data-bs-dismiss="modal" aria-label="Close"></span>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-center">
+                    <form action="layout/store" method="post" id="id_form">
+                        <div class="m-2 order-1" id="div_btn_form_inserUpda">
+                            <button type="submit" class="btn btn-success" id="btn_submit">Inserir</button>
+                        </div>
+                </div>
+                <div class="d-flex justify-content-around align-items-center mt-3">
+                    <h6 for="nome" class="font_blue">Nome</h6>
+                    <input type="text" name="nome" id="nome" class="form-control mx-2">
+                </div>
+                </form>
+            </div>
+            <div class="body-footer">
+                <div class="d-flex justify-content-center">
+                    <strong id="footer-form-inserUpdat" class="text-danger"></strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php include_once __DIR__ . '/../includes/scripts.php' ?>
 <script>
-    function setFieldsForUpdate(id, value) {
-        window.scrollTo(0, 0)
-        document.querySelector("#id").value = id
-        document.querySelector("#nome").value = value
-
-        var el_form = document.querySelector('#id_form');
-        var current_action = el_form.getAttribute('action');
-        var new_action = current_action.replace('store', 'update');
-        el_form.setAttribute('action', new_action);
-    }
+    $('#table_layout').DataTable({
+        language: {
+            url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json",
+            oPaginate: {
+                sNext: "<i class='bi bi-chevron-right'></i>",
+                sPrevious: "<i class='bi bi-chevron-left'></i>",
+                sLast: "<i class='bi bi-chevron-double-right'></i>",
+                sFirst: "<i class='bi bi-chevron-double-left'></i>",
+            },
+            sInfo: "_START_ a _END_ de _TOTAL_ registros",
+            sLengthMenu: " Exibindo _MENU_",
+            sInfoFiltered: "",
+            sEmptyTable: "Nenhum registro encontrado",
+            search: "",
+        },
+        initComplete: function() {
+            $(".custom-container").prepend(
+                `<div class="cust_contai_cust">
+            <button onclick="$('#modal_form').modal('show')" class="btn btn-primary">NOVO</button>
+            </div>`);
+        },
+        dom: '<"top"<"float-start"f> <"float-end"l><"custom-container">>t<"bottom"ip>',
+        responsive: true,
+        order: [],
+    });
 </script>
 
 <!-- '' -->

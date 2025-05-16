@@ -25,11 +25,6 @@
                         <li class="nav-item d-flex">
                             <a href="concorrente/index" class="nav-link px-0"> <span class="d-none d-sm-inline">Concorrentes</span> </a>
                         </li>
-                        <li class="nav-item d-flex">
-                            <a href="layout_colunas/index" class="nav-link px-0"> <span class="d-none d-sm-inline">Layout colunas</span> </a>
-                        </li>
-
-
                     </ul>
                     <hr>
                     <div class="dropdown pb-4">

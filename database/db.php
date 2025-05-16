@@ -54,4 +54,10 @@ class DB
     {
         self::$mysqli->rollback();
     }
+
+    // public function paginate($offset)
+    // {
+    //     $offset = $limit * ($pagina - 1);
+    //     return " LIMIT " . $limit . " OFFSET " . $offset;
+    // }
 }
