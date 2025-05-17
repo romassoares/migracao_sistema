@@ -183,6 +183,7 @@
         ids_order.splice(posicao_arrastado, 1);
 
         ids_order.splice(posicao_alvo, 0, id_layout_arrastado.toString());
+        console.log(ids_order)
     }
 
     function atualizarPosicoes() {
@@ -191,7 +192,8 @@
 
         linhas.forEach((linha, index) => {
             const id_layout = ids_order[index];
-            const novo_id = `${id_layout}_${index}`;
+            const novo_id = `${id_layout}_${1+index}`;
+            console.log(novo_id)
 
             // Atualiza o ID da linha
             linha.id = novo_id;
@@ -199,7 +201,7 @@
             // Atualiza a célula da posição
             const posicaoCell = linha.querySelector('#col_posi');
             if (posicaoCell) {
-                posicaoCell.textContent = index;
+                posicaoCell.textContent = 1 + index;
             }
         });
     }
