@@ -5,6 +5,7 @@ $version = '1.0';
 if (isset($_SESSION['logged']))
     unset($_SESSION['logged']);
 
+$caminho_sistema = __DIR__ . '/../../';
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -28,4 +29,5 @@ if (isset($_SESSION['logged']))
 </head>
 
 <body>
+
     <?php include_once __DIR__ . './menu_lateral.php' ?>

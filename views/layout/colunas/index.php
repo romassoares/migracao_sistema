@@ -5,52 +5,95 @@
         Atualização de Layouts
     </div>
     <div class="card-body">
-        <div class="d-flex justify-content-between mb-3">
-            <div class="col">
-                <form id="id_form" action="layout/store" method="post">
-                    <input type="hidden" name="id" id="id">
+        <div class="d-flex justify-content-between mb-3 gap-2">
+            <div class="col-4">
+                <form id="id_form" action="layout/update" method="post">
+                    <input type="hidden" name="id" id="id" value="<?php echo $layout->id ?>">
                     <div class="d-flex">
                         <input type="text" id="nome" name="nome" class="form-control" value="<?php echo $layout->nome ?>">
-                        <button type="submit" class="btn btn-primary">salvar</button>
+                        <button type="submit" class="btn btn-primary btn-sm">salvar</button>
                     </div>
                 </form>
             </div>
-            <div class="col">
-                <a href="layout/index" class="btn btn-primary">Voltar</a>
+            <div class="col-2">
+                <a href="layout/index" class="btn btn-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a>
             </div>
         </div>
-        <div class="d-flex">
-            <div class="card col-12 mx-2 p-2">
-                <!-- <table id="table_layout"> -->
-                <table id="table_layout_colunas" class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Nome Coluna</th>
-                            <th>Tipo</th>
-                            <th data-orderable='false'>Obrigatório</th>
-                            <th data-orderable='false'>Posição</th>
-                            <th data-orderable='false'>Ações</th>
+        <!-- <div class="d-flex"> -->
+        <div class="card col-12 p-2">
+            <!-- <table id="table_layout"> -->
+            <table id="table_layout_colunas" class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Nome Coluna</th>
+                        <th>Tipo</th>
+                        <th data-orderable='false'>Obrigatório</th>
+                        <th data-orderable='false'>Posição</th>
+                        <th data-orderable='false'>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <?php
+                    $i = 0;
+                    foreach ($layout_colunas as $colunas) { ?>
+                        <?php
+
+                        $id_tr = $colunas['id'] . '_' . $i;
+                        ?>
+                        <tr class="" id="<?php echo $id_tr ?>" draggable="true"
+                            ondragstart="dragstart_handler(event)"
+                            ondrop="drop_handler(event)"
+                            ondragover="dragover_handler(event)">
+                            <td><?php echo $colunas['nome_exibicao'] ?></td>
+                            <td><?php echo $colunas['tipo'] ?></td>
+                            <td><?php echo ($colunas['obrigatorio'] == 1) ? 'Sim' : 'Não' ?></td>
+                            <td id="col_posi"><?php echo $colunas['posicao'] ?></td>
+                            <td>
+                                <div class="d-flex">
+                                    <div class="col">
+                                        <button onclick="setFieldsForUpdate('<?php echo json_encode($colunas) ?>')" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                    <div class="col">
+                                        <a href="layout_colunas/edit?id_layout=<?php echo $layout->id ?>&id_layout_coluna=<?php echo $colunas['id'] ?>" class="btn btn-primary btn-sm"><i class="bi bi-pencil"></i></a>
+                                    </div>
+                                </div>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($layout_colunas as $colunas) { ?>
-                            <tr>
-                                <td><?php echo $colunas['nome_exibicao'] ?></td>
-                                <td><?php echo $colunas['tipo'] ?></td>
-                                <td><?php echo $colunas['obrigatorio'] ?></td>
-                                <td><?php echo $colunas['posicao'] ?></td>
-                                <td>
-                                    <div class="d-flex">
-                                        <button onclick="setFieldsForUpdate('<?php echo $layout->id ?>','<?php echo $layout->nome ?>')" class="btn btn-primary"><i class="bi bi-pencil"></i></button>
-                                    </div>
-                                    <div class="d-flex">
-                                        <a href="layout_colunas/edit?id_layout=<?php echo $layout->id ?>&id_layout_coluna=<?php echo $colunas['id'] ?>" class="btn btn-primary"><i class="bi bi-pencil"></i></a>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php } ?>
-                    </tbody>
-                </table>
+                    <?php
+                        $i++;
+                    } ?>
+                </tbody>
+            </table>
+        </div>
+        <!-- </div> -->
+    </div>
+</div>
+<!-- modal inserir nova coluna ao layout -->
+<div class="modal fade" id="modal_form">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class=""><b>Novo Layout</b></h6>
+                <span class="btn-close" id="btn_modal_close" data-bs-dismiss="modal" aria-label="Close"></span>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-center">
+                    <form action="layout_colunas/store" method="post" id="id_form">
+                        <input type="hidden" name="id_layout">
+                        <div class="m-2 order-1" id="div_btn_form_inserUpda">
+                            <button type="submit" class="btn btn-success btn-sm" id="btn_submit">Inserir</button>
+                        </div>
+                </div>
+                <div class="d-flex justify-content-around align-items-center mt-3">
+                    <h6 for="nome" class="font_blue">Nome</h6>
+                    <input type="text" name="nome" id="nome" class="form-control mx-2">
+                </div>
+                </form>
+            </div>
+            <div class="body-footer">
+                <div class="d-flex justify-content-center">
+                    <strong id="footer-form-inserUpdat" class="text-danger"></strong>
+                </div>
             </div>
         </div>
     </div>
@@ -58,6 +101,15 @@
 
 <?php include_once __DIR__ . '/../../includes/scripts.php' ?>
 <script>
+    var ids_order = '<?php echo json_encode($ids_order) ?>'
+    var itemAlterado = {}
+    $(document).ready(function() {
+        // setTimeout(function() {
+        //     //     montaDataTable(dataLayoutColunas)
+        //     console.log(ids_order)
+        // }, 500);
+    });
+
     function setFieldsForUpdate(id, value) {
         window.scrollTo(0, 0)
         document.querySelector("#id").value = id
@@ -69,31 +121,86 @@
         el_form.setAttribute('action', new_action);
     }
 
-    $('#table_layout_colunas').DataTable({
-        language: {
-            url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json",
-            oPaginate: {
-                sNext: "<i class='bi bi-chevron-right'></i>",
-                sPrevious: "<i class='bi bi-chevron-left'></i>",
-                sLast: "<i class='bi bi-chevron-double-right'></i>",
-                sFirst: "<i class='bi bi-chevron-double-left'></i>",
-            },
-            sInfo: "_START_ a _END_ de _TOTAL_ registros",
-            sLengthMenu: " Exibindo _MENU_",
-            sInfoFiltered: "",
-            sEmptyTable: "Nenhum registro encontrado",
-            search: "",
-        },
-        initComplete: function() {
-            $(".custom-container").prepend(
-                `<div class="cust_contai_cust">
-            <button class="btn btn-primary">NOVO</button>
-            </div>`);
-        },
-        dom: '<"top"<"float-start"f> <"float-end"l><"custom-container">>t<"bottom"ip>',
-        responsive: true,
-        order: [],
-    });
-</script>
+    let draggedId = null;
 
-<!-- '' -->
+    function dragstart_handler(ev) {
+        draggedId = ev.target.id;
+        ev.dataTransfer.setData("text/plain", draggedId);
+    }
+
+    function dragover_handler(ev) {
+        ev.preventDefault();
+    }
+
+    async function drop_handler(ev) {
+        ev.preventDefault();
+        const droppedTr = ev.target.closest('tr');
+        const draggedTr = document.getElementById(draggedId);
+
+        if (droppedTr && draggedTr && droppedTr !== draggedTr) {
+            const tbody = document.getElementById('table-body');
+
+            tbody.insertBefore(draggedTr, droppedTr);
+
+            const prev = draggedTr.previousElementSibling;
+            const next = draggedTr.nextElementSibling;
+
+            const prevId = prev ? prev.id : null;
+            const nextId = next ? next.id : null;
+
+            // console.log("Dropped:", draggedTr.id);
+            // console.log("Previous ID:", prevId);
+            // console.log("Next ID:", nextId);
+
+            var arrastado = draggedTr.id.split('_')
+            var id_layout_arrastado = arrastado[0]
+            var posicao_arrastado = arrastado[1]
+
+            var ids = prevId.split('_')
+            var id_layout = ids[0]
+            var posicao_alvo = ids[1]
+
+            itemAlterado = {
+                posicao_alvo: parseInt(posicao_alvo),
+                posicao_arrastado: parseInt(posicao_arrastado),
+                id_layout_arrastado: parseInt(id_layout_arrastado),
+            }
+            atualizaOrdem(itemAlterado)
+            atualizarPosicoes();
+        }
+    }
+
+    function atualizaOrdem(itemAlterado) {
+        if (typeof ids_order === "string") {
+            ids_order = JSON.parse(ids_order);
+        }
+        // ids_order = JSON.parse(ids_order)
+
+        let posicao_alvo = parseInt(itemAlterado.posicao_alvo)
+        let posicao_arrastado = parseInt(itemAlterado.posicao_arrastado)
+        let id_layout_arrastado = parseInt(itemAlterado.id_layout_arrastado)
+
+        ids_order.splice(posicao_arrastado, 1);
+
+        ids_order.splice(posicao_alvo, 0, id_layout_arrastado.toString());
+    }
+
+    function atualizarPosicoes() {
+        const tbody = document.getElementById('table-body');
+        const linhas = tbody.querySelectorAll('tr');
+
+        linhas.forEach((linha, index) => {
+            const id_layout = ids_order[index];
+            const novo_id = `${id_layout}_${index}`;
+
+            // Atualiza o ID da linha
+            linha.id = novo_id;
+
+            // Atualiza a célula da posição
+            const posicaoCell = linha.querySelector('#col_posi');
+            if (posicaoCell) {
+                posicaoCell.textContent = index;
+            }
+        });
+    }
+</script>

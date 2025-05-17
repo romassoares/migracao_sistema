@@ -113,3 +113,13 @@ function trata_group_concat($data, $campo)
     // }
     return $resultado[0][$campo];
 }
+
+function return_api($status = 404, $msg = '', $data = [])
+{
+    $statusRetorno = false;
+    http_response_code($status);
+    if ($status == 200)
+        $statusRetorno = true;
+    echo json_encode(['status' => $statusRetorno, 'data' => $data, 'msg' => $msg]);
+    return;
+}

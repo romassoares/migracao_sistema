@@ -40,19 +40,19 @@ class DB
         }
     }
 
-    public static function beginTransaction()
+    public function beginTransaction($database)
     {
-        self::$mysqli->begin_transaction();
+        $this->connect($database)->begin_transaction();
     }
 
-    public static function commit()
+    public function commit($database)
     {
-        self::$mysqli->commit();
+        $this->connect($database)->commit();
     }
 
-    public static function rollBack()
+    public function rollBack($database)
     {
-        self::$mysqli->rollback();
+        $this->connect($database)->rollback();
     }
 
     // public function paginate($offset)

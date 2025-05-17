@@ -46,7 +46,7 @@
                 <div class="d-flex justify-content-center">
                     <form action="layout/store" method="post" id="id_form">
                         <div class="m-2 order-1" id="div_btn_form_inserUpda">
-                            <button type="submit" class="btn btn-success" id="btn_submit">Inserir</button>
+                            <button type="submit" class="btn btn-success btn-sm" id="btn_submit">Inserir</button>
                         </div>
                 </div>
                 <div class="d-flex justify-content-around align-items-center mt-3">
@@ -84,7 +84,7 @@
         initComplete: function() {
             $(".custom-container").prepend(
                 `<div class="cust_contai_cust">
-            <button onclick="$('#modal_form').modal('show')" class="btn btn-primary">NOVO</button>
+            <button onclick="$('#modal_form').modal('show')" class="btn btn-success btn-sm"><i class="bi bi-plus"></i> Layout</button>
             </div>`);
         },
         dom: '<"top"<"float-start"f> <"float-end"l><"custom-container">>t<"bottom"ip>',
