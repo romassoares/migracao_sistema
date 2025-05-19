@@ -66,6 +66,12 @@ switch ($uri) {
     case '/layout_colunas/update':
         redirect('layout_colunas/update');
         break;
+    case '/layout_colunas/delete':
+        redirect('layout_colunas/delete');
+        break;
+    case '/layout_colunas/deleteConteudosColuna':
+        redirect('layout_colunas/deleteConteudosColuna');
+        break;
     // ==============================================
     default:
         die('view not found');

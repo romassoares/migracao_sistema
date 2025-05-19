@@ -21,6 +21,9 @@
         </div>
         <!-- <div class="d-flex"> -->
         <div class="card col-12 p-2">
+            <div class="col-12">
+                <button class="btn btn-success btn-sm" onclick="$('#modal_form').modal('show')"><i class="bi bi-plus"></i> Coluna</button>
+            </div>
             <!-- <table id="table_layout"> -->
             <table id="table_layout_colunas" class="table table-striped">
                 <thead>
@@ -51,10 +54,10 @@
                             <td>
                                 <div class="d-flex">
                                     <div class="col">
-                                        <button onclick="setFieldsForUpdate('<?php echo json_encode($colunas) ?>')" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></button>
+                                        <a href="layout_colunas/edit?id_layout=<?php echo $layout->id ?>&id_layout_coluna=<?php echo $colunas['id'] ?>" class="btn btn-primary btn-sm"><i class="bi bi-pencil"></i></a>
                                     </div>
                                     <div class="col">
-                                        <a href="layout_colunas/edit?id_layout=<?php echo $layout->id ?>&id_layout_coluna=<?php echo $colunas['id'] ?>" class="btn btn-primary btn-sm"><i class="bi bi-pencil"></i></a>
+                                        <a href="layout_colunas/delete?id_layout=<?php echo $layout->id ?>&id_layout_coluna=<?php echo $colunas['id'] ?>" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></a>
                                     </div>
                                 </div>
                             </td>
@@ -79,17 +82,38 @@
             <div class="modal-body">
                 <div class="d-flex justify-content-center">
                     <form action="layout_colunas/store" method="post" id="id_form">
-                        <input type="hidden" name="id_layout">
+                        <input type="hidden" name="id_layout" value="<?php echo $layout->id ?>">
                         <div class="m-2 order-1" id="div_btn_form_inserUpda">
                             <button type="submit" class="btn btn-success btn-sm" id="btn_submit">Inserir</button>
                         </div>
                 </div>
-                <div class="d-flex justify-content-around align-items-center mt-3">
-                    <h6 for="nome" class="font_blue">Nome</h6>
-                    <input type="text" name="nome" id="nome" class="form-control mx-2">
+                <div class="d-flex justify-content-around align-items-center mt-3 gap-2">
+                    <h6 for="nome_exibicao" class="font_blue">Nome</h6>
+                    <input type="text" name="nome_exibicao" id="nome_exibicao" class="form-control">
                 </div>
-                </form>
+                <div class="d-flex justify-content-around align-items-center mt-3 gap-2">
+                    <h6 for="tipo">Tipo</h6>
+                    <select name="tipo" id="tipo" class="form-control">
+                        <option value="livre">Livre</option>
+                        <option value="email">Email</option>
+                        <option value="telefone">Telefone</option>
+                        <option value="data">Data</option>
+                        <option value="numerico">Numérico</option>
+                        <option value="flag">Flag</option>
+                    </select>
+                </div>
+                <div class="col-6 mt-3 d-flex gap-3">
+                    <div class="form-check  ">
+                        <input class="form-check-input" type="radio" id="obrigatorio_sim" name="obrigatorio" checked value="1">
+                        <label class="form-check-label" for="obrigatorio">sim</label>
+                    </div>
+                    <div class="form-check ">
+                        <input class="form-check-input" type="radio" id="obrigatorio_nao" name="obrigatorio" value="0">
+                        <label class="form-check-label" for="obrigatorio">não</label>
+                    </div>
+                </div>
             </div>
+            </form>
             <div class="body-footer">
                 <div class="d-flex justify-content-center">
                     <strong id="footer-form-inserUpdat" class="text-danger"></strong>
@@ -171,10 +195,8 @@
     }
 
     function atualizaOrdem(itemAlterado) {
-        if (typeof ids_order === "string") {
+        if (typeof ids_order === "string")
             ids_order = JSON.parse(ids_order);
-        }
-        // ids_order = JSON.parse(ids_order)
 
         let posicao_alvo = parseInt(itemAlterado.posicao_alvo)
         let posicao_arrastado = parseInt(itemAlterado.posicao_arrastado)
@@ -183,7 +205,6 @@
         ids_order.splice(posicao_arrastado, 1);
 
         ids_order.splice(posicao_alvo, 0, id_layout_arrastado.toString());
-        console.log(ids_order)
     }
 
     function atualizarPosicoes() {
@@ -193,12 +214,9 @@
         linhas.forEach((linha, index) => {
             const id_layout = ids_order[index];
             const novo_id = `${id_layout}_${1+index}`;
-            console.log(novo_id)
 
-            // Atualiza o ID da linha
             linha.id = novo_id;
 
-            // Atualiza a célula da posição
             const posicaoCell = linha.querySelector('#col_posi');
             if (posicaoCell) {
                 posicaoCell.textContent = 1 + index;

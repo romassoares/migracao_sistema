@@ -33,10 +33,18 @@ function validateRequest($data_post, $regras)
     $dados = [];
     $erros = [];
 
-    foreach ($regras as $campo => $regra) {
-        $valor = isset($data_post[$campo]) ? trim($data_post[$campo]) : '';
+    // dd($data_post, $regras);
 
-        if (!empty($regra['required']) && $valor === '') {
+    foreach ($regras as $campo => $regra) {
+
+        if (isset($data_post[$campo]) && !is_array($data_post[$campo])) {
+            $valor = isset($data_post[$campo]) ? trim($data_post[$campo]) : '';
+        } else {
+            $valor = isset($data_post[$campo]) ? $data_post[$campo] : [];
+        }
+
+
+        if (!empty($regra['required']) && $valor === '' && $regra['type'] !== 'check') {
             $erros[$campo] = "O campo '$campo' é obrigatório.";
             continue;
         }
@@ -46,7 +54,8 @@ function validateRequest($data_post, $regras)
             continue;
         }
 
-        $valor = htmlspecialchars($valor, ENT_QUOTES, 'UTF-8');
+        // if ($regra['type'] !== 'array')
+        //     $valor = htmlspecialchars($valor, ENT_QUOTES, 'UTF-8');
 
         switch ($regra['type']) {
             case 'int':
@@ -60,6 +69,22 @@ function validateRequest($data_post, $regras)
             case 'email':
                 if (!filter_var($valor, FILTER_VALIDATE_EMAIL)) {
                     $erros[$campo] = "O campo '$campo' deve ser um e-mail válido.";
+                    continue 2;
+                }
+                $dados[$campo] = $valor;
+                break;
+
+            case 'check':
+                if (isset($data_post[$campo])) {
+                    $dados[$campo] = '1';
+                } else {
+                    $dados[$campo] = '0';
+                }
+                break;
+
+            case 'array':
+                if (!is_array($valor)) {
+                    $erros[$campo] = "O campo '$campo' deve ser um array válido.";
                     continue 2;
                 }
                 $dados[$campo] = $valor;

@@ -38,23 +38,21 @@ function edit()
     layout_colunas.*, 
     GROUP_CONCAT(
      	CONCAT(
-             'id_modelo_coluna@@', IFNULL(l_c_d.id_modelo_coluna,''),
-            '##conteudo_de@@', IFNULL(l_c_d.conteudo_de,''), 
-            '##id_layout_coluna_conteudos@@', IFNULL(l_c_d.id_layout_coluna_conteudos,''), 
-            '##Conteudo_para_livre@@', IFNULL(l_c_d.Conteudo_para_livre,''), 
-            '##substituir@@', IFNULL(l_c_d.substituir,''), 
-            '##ordem@@', IFNULL(l_c_d.ordem,'')
+             'colunas_conteudo_id@@', IFNULL(l_c_d.id,'') ,
+            '##id_layout_colunas@@', IFNULL(l_c_d.id_layout_colunas,''), 
+            '##conteudo@@', IFNULL(l_c_d.conteudo,''), 
+            '##descricao@@', IFNULL(l_c_d.descricao,'')
             )
             SEPARATOR ' || '
         ) AS flags 
     FROM layout_colunas 
-    LEFT JOIN layout_coluna_depara AS l_c_d ON layout_colunas.id = l_c_d.id_layout_coluna  
+    inner JOIN layout_coluna_conteudos AS l_c_d ON layout_colunas.id = l_c_d.id_layout_colunas  
+    -- inner JOIN layout_coluna_depara AS l_c_d ON layout_colunas.id = l_c_d.id_layout_coluna  
     WHERE layout_colunas.id_layout = $id_layout AND layout_colunas.id = $id_layout_coluna";
     $layout_coluna = metodo_get($sql, 'migracao');
 
-    $layout_coluna->flags = trata_group_concat((array) $layout_coluna->flags, 'flags');
-
-    // dd($layout_coluna);
+    if (!is_null($layout_coluna->flags))
+        $layout_coluna->flags = trata_group_concat((array) $layout_coluna->flags, 'flags');
 
     return ['view' => 'layout/colunas/form', 'data' => ['layout_coluna' => $layout_coluna], 'function' => ''];
 }
@@ -62,34 +60,140 @@ function edit()
 function store()
 {
     $regras = [
-        'nome' => ['required' => true, 'type' => 'string']
+        'id_layout' => ['required' => true, 'type' => 'int'],
+        'nome_exibicao' => ['required' => true, 'type' => 'string'],
+        'tipo' => ['required' => true, 'type' => 'string'],
+        'obrigatorio' => ['required' => true, 'type' => 'string']
     ];
     $request = validateRequest($_POST, $regras);
-
     $dados = $request['dados'];
-    $dados['ativo'] = 1;
+    // dd($dados);
 
-    $sql = "INSERT INTO layout_colunas (nome, ativo) VALUES (?,?)";
-    insert_update($sql, "ss", $dados, 'migracao');
+    $sql = "INSERT INTO layout_colunas (id_layout, nome_exibicao, tipo, obrigatorio, posicao)
+    VALUES (?, ?, ?, ?, COALESCE(
+                            (SELECT MAX_POS + 1 FROM (SELECT MAX(posicao) AS MAX_POS FROM layout_colunas WHERE id_layout = ?
+                            ) AS temp),
+                        1)
+        )";
+    insert_update($sql, "issii", [
+        $dados['id_layout'],
+        $dados['nome_exibicao'],
+        $dados['tipo'],
+        $dados['obrigatorio'],
+        $dados['id_layout']
+    ], 'migracao');
 
-    return ['view' => '', 'data' => [], 'function' => 'index'];
+    return ['view' => '', 'data' => [], 'function' => 'index/?id=' . $dados['id_layout']];
 }
+
+
 
 function update()
 {
+    global $db;
+
     $regras = [
-        'id' => ['required' => true, 'type' => 'int'],
-        'nome' => ['required' => true, 'type' => 'string']
+        'id_layout' => ['required' => true, 'type' => 'int'],
+        'id_layout_coluna' => ['required' => true, 'type' => 'int'],
+        'nome_exibicao' => ['required' => true, 'type' => 'string'],
+        'tipo' => ['required' => true, 'type' => 'string'],
+        'ativo' => ['required' => true, 'type' => 'string'],
+        'obrigatorio' => ['required' => true, 'type' => 'string'],
+        'conteudo' => ['required' => false, 'type' => 'array'],
+        'conteudoNew' => ['required' => false, 'type' => 'array']
     ];
     $request = validateRequest($_POST, $regras);
 
     $dados = $request['dados'];
+    $id_layout = $dados['id_layout'];
+    $id_layout_coluna = $dados['id_layout_coluna'];
 
-    $sql = "UPDATE layout_colunas SET nome = ? WHERE id = ?";
+    // =======================================================================================
+    // =======================================================================================
 
-    insert_update($sql, "si", [$dados['nome'], $dados['id']], 'migracao');
+    if (isset($dados['conteudo']) && count($dados['conteudo']) > 0) {
+        $qnt_items_conteudo = count($dados['conteudo']['colunas_conteudo_id']);
+        $colunas_conteudo_id = $dados['conteudo']['colunas_conteudo_id'];
+        $nomes_data = $dados['conteudo']['nome'];
+        $decricao_data = $dados['conteudo']['descricao'];
 
-    return ['view' => '', 'data' => [], 'function' => 'index'];
+        for ($i = 0; $i < $qnt_items_conteudo; $i++) {
+            $conteudo = $nomes_data[$i];
+            $descricao = $decricao_data[$i];
+            $id = $colunas_conteudo_id[$i];
+
+            $sqlBaseUpdate = "UPDATE layout_coluna_conteudos SET conteudo = '$conteudo', descricao = '$descricao' WHERE id_layout_colunas = $id_layout_coluna AND id = $id";
+            $db->connect('migracao')->query($sqlBaseUpdate);
+        }
+    }
+
+    // =======================================================================================
+    // =======================================================================================
+
+
+    if (isset($dados['conteudoNew']) && count($dados['conteudoNew']) > 0) {
+        $qnt_items_new = count($dados['conteudoNew']['nome']);
+        $nomes_data_new = $dados['conteudoNew']['nome'];
+        $decricao_data_new = $dados['conteudoNew']['descricao'];
+
+        $sqlBaseInsert = "INSERT INTO layout_coluna_conteudos (id_layout_colunas, conteudo, descricao) VALUES";
+        for ($i = 0; $i < $qnt_items_new; $i++) {
+            $sqlBaseInsert .= " ($id_layout_coluna, '$nomes_data_new[$i]', '$decricao_data_new[$i]'),";
+        }
+        $sqlBaseInsert = substr($sqlBaseInsert, 0, -1);
+        // dd($sqlBaseInsert);
+        $db->connect('migracao')->query($sqlBaseInsert);
+    }
+
+    $sql = "UPDATE layout_colunas SET nome_exibicao = ?, tipo = ?, ativo = ?, obrigatorio = ? WHERE id = ? AND id_layout = ?";
+
+    insert_update($sql, 'ssiiii', [
+        $dados['nome_exibicao'],
+        $dados['tipo'],
+        $dados['ativo'],
+        $dados['obrigatorio'],
+        $dados['id_layout_coluna'],
+        $dados['id_layout'],
+    ], 'migracao');
+
+    return ['view' => '', 'data' => [], 'function' => "edit/?id_layout=$id_layout&id_layout_coluna=$id_layout_coluna"];
+}
+
+function deleteConteudosColuna()
+{
+    $regras = [
+        'id_layout_coluna' => ['required' => true, 'type' => 'string'],
+        'id_layout' => ['required' => true, 'type' => 'string'],
+    ];
+    $request = validateRequest($_GET, $regras);
+
+    $dados = (object) $request['dados'];
+
+    $sql = "DELETE FROM layout_coluna_conteudos WHERE id_layout_colunas = ?";
+    insert_update($sql, 'i', [$dados->id_layout_coluna], 'migracao');
+
+    // dd("edit/?id_layout=" . $dados->id_layout . "&id_layout_coluna=" . $dados->id_layout_coluna);
+
+    return ['view' => '', 'data' => [], 'function' => "edit/?id_layout=" . $dados->id_layout . "&id_layout_coluna=" . $dados->id_layout_coluna];
+}
+
+
+function delete()
+{
+    $regras = [
+        'id_layout' => ['required' => true, 'type' => 'string'],
+        'id_layout_coluna' => ['required' => true, 'type' => 'string']
+    ];
+    $request = validateRequest($_GET, $regras);
+
+    $id_layout = $request['dados']['id_layout'];
+    $id_layout_coluna = $request['dados']['id_layout_coluna'];
+
+    $sql = "DELETE FROM layout_colunas WHERE id_layout = ? AND id = ?";
+
+    insert_update($sql, 'ii', [$id_layout, $id_layout_coluna], 'migracao');
+
+    return ['view' => '', 'data' => [], 'function' => "index/?id=" . $id_layout];
 }
 
 function novaOrdenacao($data)
@@ -98,11 +202,7 @@ function novaOrdenacao($data)
     $db = new DB();
 
     $regras = [
-        'id_layout' => ['required' => true, 'type' => 'int'],
-        'id_layout_coluna_alvo' => ['required' => true, 'type' => 'int'],
-        'posicao_alvo' => ['required' => true, 'type' => 'int'],
-        'posicao_dragged' => ['required' => true, 'type' => 'int'],
-        'id_layout_coluna_dragged' => ['required' => true, 'type' => 'int']
+        'id_layout' => ['required' => true, 'type' => 'int']
     ];
     $request = validateRequest($data, $regras);
 
@@ -176,27 +276,3 @@ function novaOrdenacao($data)
         die("Erro ao reordenar colunas: " . $e->getMessage());
     }
 }
-
-
-
-// item1 = posicao_alvo1
-// item2 = posicao_alvo2
-// item3 = posicao_alvo3
-// item4 = posicao_alvo4
-// item5 = posicao_alvo5
-// item6 = posicao_alvo6
-
-// //-----
-// item2 = posicao_alvo1
-// item3 = posicao_alvo2
-// item4 = posicao_alvo3
-// item1 = posicao_alvo4
-// item5 = posicao_alvo5
-// item6 = posicao_alvo6
-// //-----
-// item6 = posicao_alvo1
-// item2 = posicao_alvo2
-// item3 = posicao_alvo3
-// item4 = posicao_alvo4
-// item1 = posicao_alvo5
-// item5 = posicao_alvo6

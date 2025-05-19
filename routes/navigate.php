@@ -30,6 +30,7 @@ function redirect($modulo)
         exit;
     }
 
+
     foreach ($retorno['data'] as $chave => $valor) {
         $$chave = $valor;
     }
