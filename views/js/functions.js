@@ -14,13 +14,3 @@ $(document).ready(function () {
     }, 500);
 });
 
-async function logout() {
-    const response = await method_get('./app/Auth/logout.php')
-
-    if (response.status == true) {
-        location.reload()
-    } else {
-        return;
-    }
-}
-

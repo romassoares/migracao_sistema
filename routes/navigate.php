@@ -3,7 +3,10 @@
 function redirect($modulo)
 {
     if (!isAuthenticated()) {
-        require './views/auth/login.php';
+        header('Location: ./auth/login');
+        return;
+    } else if (!companySelected()) {
+        header('Location: ./auth/companys');
         return;
     }
 
@@ -16,7 +19,7 @@ function redirect($modulo)
         var_dump('Controller não existe em: ' . $arquivo_controller_exist . 'Controller.php');
     }
     // notdie('antes include');
-    include $arquivo_controller_exist;
+    include_once $arquivo_controller_exist;
     // notdie('depois include');
 
     if (!function_exists($explode[1])) {

@@ -1,65 +1,78 @@
 <?php
+require_once __DIR__ . '/../../app/Controller/AuthController.php';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    ckeck_company();
+    if(isset($_POST['create'])) {
+        header('Location: /auth/new_company');
+        exit;
+    } else {
+        if(check_company()) {
+            header('Location: /');
+        } else {
+            $error = "Selecione um cliente!";
+        }
+    }
 }
+
+$companys = getCompanys();
 ?>
+
+
+
 <!DOCTYPE html>
 <html lang="pt-br">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>tests - login</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2-bootstrap-theme/0.1.0-beta.10/select2-bootstrap.css" integrity="sha512-CbQfNVBSMAYmnzP3IC+mZZmYMP2HUnVkV4+PwuhpiMUmITtSpS7Prr3fNncV1RBOnWxzz4pYQ5EAGG4ck46Oig==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Selecionar cliente</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"> 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.0/dist/jquery.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </head>
-
-<body class="d-flex justify-content-center align-items-center bg-dark">
-    <div class="card col-6 p-5">
-        <h1>Empresas</h1>
-        <div>
+<body>
+    <div class="d-flex justify-content-center align-items-center min-vh-100">
+        <div class="card shadow login-card p-4" style="max-width: 400px; width: 100%; border-radius: 1rem; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);">
+            <div class="card-body">
+            <h3 class="card-title text-center mb-4">Clientes</h3>
+            <?php if (isset($error)): ?>
+                <div class="alert alert-danger mt-2"><?= $error ?></div>
+            <?php endif; ?>
             <form method="post">
-                <div class="col-12 mt-4">
-                    <!-- <div class="input-group"> -->
-                    <!-- <div class="input-group-prepend"> -->
-                    <label for="inputGroupSelect01">Clientes</label>
-                    <!-- </div> -->
-                    <select class="form-control select2-single" id="inputGroupSelect01">
-                        <option value="1">One</option>
-                        <option value="2">Two</option>
-                        <option value="3">Three</option>
-                    </select>
-                    <!-- </div> -->
-                </div>
-                <div class="d-flex mt-4 justify-content-between">
-                    <div class="order-2">
-                        <button type="submit" class="btn btn-primary">Selecionar</button>
+                    <div class="mb-4">
+                        <label for="company" class="form-label">Cliente</label>
+                        <select class="form-select" id="company" name="company">
+                            <option value="" disabled selected>Selecione um cliente</option>
+                            <?php foreach ($companys as $company): ?>
+                                <option value="<?= htmlspecialchars($company['id_cliente']) ?>">
+                                    <?= htmlspecialchars($company['nome_cliente']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
-            </form>
-            <div class="order-1">
-                <button class="btn btn-success">Criar cliente</button>
+                    <div class="d-grid gap-2">
+                        <button type="submit" name="select" class="btn btn-primary">Selecionar</button>
+                        <button type="submit" name="create" class="btn btn-success">Criar novo cliente</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-    </div>
-</body>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
-<script src="https://cdn.datatables.net/v/dt/dt-1.13.6/datatables.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<script rel="stylesheet" src="views/js/metodos_axios.js?version=<?= $version ?>"></script>
-
-<script>
-    $(document).ready(function() {
-        $('.select2-single').select2({
-            theme: "bootstrap",
-            placeholder: "Search"
+    <script>
+        $( '#company' ).select2({
+            theme: "bootstrap-5",
+            width: "100%",
+            placeholder: "Selecione um cliente",
+            language: {
+                noResults: function() {
+                    return "Nenhum cliente encontrado";
+                }
+            }
         });
-    });
-</script>
-
+    </script>
+</body>
 </html>

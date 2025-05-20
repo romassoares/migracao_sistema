@@ -60,5 +60,3 @@
         el_form.setAttribute('action', new_action);
     }
 </script>
-
-<!-- '' -->
