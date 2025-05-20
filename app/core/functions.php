@@ -33,67 +33,61 @@ function validateRequest($data_post, $regras)
     $dados = [];
     $erros = [];
 
-    // dd($data_post, $regras);
-
     foreach ($regras as $campo => $regra) {
 
-        if (isset($data_post[$campo]) && !is_array($data_post[$campo])) {
+        if ($regra['type'] == "email") {
             $valor = isset($data_post[$campo]) ? trim($data_post[$campo]) : '';
-        } else {
+            if (!filter_var($valor, FILTER_VALIDATE_EMAIL)) {
+                $erros[$campo] = "O campo '$campo' deve ser um e-mail válido.";
+            }
+            $dados[$campo] = trim($valor);
+            // continue;
+        }
+
+        if ($regra['type'] == "string") {
+            $valor = isset($data_post[$campo]) ? trim($data_post[$campo]) : '';
+            $valor = htmlspecialchars($valor, ENT_QUOTES, 'UTF-8');
+            $dados[$campo] = trim($valor);
+            // continue;
+        }
+
+        if ($regra['type'] == "int") {
+            $valor = isset($data_post[$campo]) ? trim($data_post[$campo]) : 0;
+            if (!filter_var($valor, FILTER_VALIDATE_INT)) {
+                $erros[$campo] = "O campo '$campo' deve ser um número inteiro.";
+            }
+            $dados[$campo] = (int)$valor;
+            // continue;
+        }
+
+        if ($regra['type'] == "check") {
+            // dd($data_post[$campo]);
+            $valor = is_null($data_post[$campo]) ? '0' : '1';
+            $dados[$campo] = $valor;
+            // continue;
+        }
+
+        if ($regra['type'] == "array") {
             $valor = isset($data_post[$campo]) ? $data_post[$campo] : [];
+            if (!is_array($valor)) {
+                $erros[$campo] = "O campo '$campo' deve ser um array válido.";
+            }
+            $dados[$campo] = $valor;
+            // continue;
         }
 
 
-        if (!empty($regra['required']) && $valor === '' && $regra['type'] !== 'check') {
+
+        if (!empty($regra['required']) && (empty($valor) || (is_array($valor) && count($valor) == 0))) {
             $erros[$campo] = "O campo '$campo' é obrigatório.";
             continue;
         }
 
-        if ($valor === '') {
-            $dados[$campo] = null;
-            continue;
-        }
 
         // if ($regra['type'] !== 'array')
         //     $valor = htmlspecialchars($valor, ENT_QUOTES, 'UTF-8');
 
-        switch ($regra['type']) {
-            case 'int':
-                if (!filter_var($valor, FILTER_VALIDATE_INT)) {
-                    $erros[$campo] = "O campo '$campo' deve ser um número inteiro.";
-                    continue 2;
-                }
-                $dados[$campo] = (int)$valor;
-                break;
 
-            case 'email':
-                if (!filter_var($valor, FILTER_VALIDATE_EMAIL)) {
-                    $erros[$campo] = "O campo '$campo' deve ser um e-mail válido.";
-                    continue 2;
-                }
-                $dados[$campo] = $valor;
-                break;
-
-            case 'check':
-                if (isset($data_post[$campo])) {
-                    $dados[$campo] = '1';
-                } else {
-                    $dados[$campo] = '0';
-                }
-                break;
-
-            case 'array':
-                if (!is_array($valor)) {
-                    $erros[$campo] = "O campo '$campo' deve ser um array válido.";
-                    continue 2;
-                }
-                $dados[$campo] = $valor;
-                break;
-
-            case 'string':
-            default:
-                $dados[$campo] = $valor;
-        }
     }
 
     return [

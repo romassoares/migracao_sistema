@@ -97,14 +97,15 @@ function update()
         'id_layout_coluna' => ['required' => true, 'type' => 'int'],
         'nome_exibicao' => ['required' => true, 'type' => 'string'],
         'tipo' => ['required' => true, 'type' => 'string'],
-        'ativo' => ['required' => true, 'type' => 'string'],
-        'obrigatorio' => ['required' => true, 'type' => 'string'],
+        'ativo' => ['required' => true, 'type' => 'check'],
+        'obrigatorio' => ['required' => true, 'type' => 'check'],
         'conteudo' => ['required' => false, 'type' => 'array'],
         'conteudoNew' => ['required' => false, 'type' => 'array']
     ];
     $request = validateRequest($_POST, $regras);
 
     $dados = $request['dados'];
+    // dd($dados);
     $id_layout = $dados['id_layout'];
     $id_layout_coluna = $dados['id_layout_coluna'];
 
@@ -147,7 +148,7 @@ function update()
 
     $sql = "UPDATE layout_colunas SET nome_exibicao = ?, tipo = ?, ativo = ?, obrigatorio = ? WHERE id = ? AND id_layout = ?";
 
-    insert_update($sql, 'ssiiii', [
+    insert_update($sql, 'sssiii', [
         $dados['nome_exibicao'],
         $dados['tipo'],
         $dados['ativo'],
@@ -180,6 +181,7 @@ function deleteConteudosColuna()
 
 function delete()
 {
+    $database = 'migracao';
     $regras = [
         'id_layout' => ['required' => true, 'type' => 'string'],
         'id_layout_coluna' => ['required' => true, 'type' => 'string']
@@ -189,11 +191,32 @@ function delete()
     $id_layout = $request['dados']['id_layout'];
     $id_layout_coluna = $request['dados']['id_layout_coluna'];
 
-    $sql = "DELETE FROM layout_colunas WHERE id_layout = ? AND id = ?";
+    $db = new DB();
+    $db->beginTransaction($database);
 
-    insert_update($sql, 'ii', [$id_layout, $id_layout_coluna], 'migracao');
+    try {
+        $sql = "SELECT * FROM layout_colunas WHERE id = $id_layout_coluna AND id_layout = $id_layout";
+        $item_alvo = metodo_get($sql, 'migracao');
 
-    return ['view' => '', 'data' => [], 'function' => "index/?id=" . $id_layout];
+        $sql = "DELETE FROM layout_colunas WHERE id_layout = ? AND id = ?";
+        insert_update($sql, 'ii', [$id_layout, $id_layout_coluna], 'migracao');
+
+        $sql = "UPDATE layout_colunas 
+                    SET posicao = posicao - 1 
+                    WHERE id_layout = ? 
+                    AND posicao > ? 
+                    ";
+        insert_update($sql, "ii", [
+            $item_alvo->id_layout,
+            $item_alvo->posicao
+        ], $database);
+        // return_api(200);
+        $db->commit($database);
+        return ['view' => '', 'data' => [], 'function' => "index/?id=" . $id_layout];
+    } catch (Exception $e) {
+        $db->rollBack($database);
+        die("Erro ao reordenar colunas: " . $e->getMessage());
+    }
 }
 
 function novaOrdenacao($data)

@@ -57,7 +57,21 @@
                                         <a href="layout_colunas/edit?id_layout=<?php echo $layout->id ?>&id_layout_coluna=<?php echo $colunas['id'] ?>" class="btn btn-primary btn-sm"><i class="bi bi-pencil"></i></a>
                                     </div>
                                     <div class="col">
-                                        <a href="layout_colunas/delete?id_layout=<?php echo $layout->id ?>&id_layout_coluna=<?php echo $colunas['id'] ?>" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></a>
+                                        <a class="btn btn-danger btn-sm dropdown dropdown-toggle" id="dropdownMenuButtonDestroyLayoutConteudos" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            <i class="bi bi-trash"></i></a>
+                                        <!--  -->
+                                        <!-- dropdownMenuButtonDestroy -->
+                                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButtonDestroyLayoutConteudos">
+                                            <div class="col-sm-12 text-center">
+                                                <p><strong>Deseja realmente excluir este item?</strong></p>
+                                            </div>
+                                            <hr>
+                                            <div class="col-sm-12 text-center">
+                                                <a href="layout_colunas/delete?id_layout=<?php echo $layout->id ?>&id_layout_coluna=<?php echo $colunas['id'] ?>" class='btn btn-success btn-sm'>Sim</a>
+                                                <a class="btn btn-danger btn-sm">Não</a>
+                                            </div>
+                                        </div>
+                                        <!--  -->
                                     </div>
                                 </div>
                             </td>
@@ -128,10 +142,7 @@
     var ids_order = '<?php echo json_encode($ids_order) ?>'
     var itemAlterado = {}
     $(document).ready(function() {
-        // setTimeout(function() {
-        //     //     montaDataTable(dataLayoutColunas)
-        //     console.log(ids_order)
-        // }, 500);
+
     });
 
     function setFieldsForUpdate(id, value) {
@@ -150,7 +161,37 @@
     function dragstart_handler(ev) {
         draggedId = ev.target.id;
         ev.dataTransfer.setData("text/plain", draggedId);
+
+        const dragDiv = document.createElement('div');
+        dragDiv.innerHTML = "Arrastando...";
+        dragDiv.style.width = '120px';
+        dragDiv.style.height = '40px';
+        dragDiv.style.background = '#3498db';
+        dragDiv.style.color = 'white';
+        dragDiv.style.display = 'flex';
+        dragDiv.style.alignItems = 'center';
+        dragDiv.style.justifyContent = 'center';
+        dragDiv.style.borderRadius = '8px';
+        dragDiv.style.fontFamily = 'Arial';
+        dragDiv.style.fontSize = '14px';
+        dragDiv.style.boxShadow = '0 0 5px rgba(0,0,0,0.3)';
+        dragDiv.style.position = 'absolute';
+        dragDiv.style.top = '-1000px';
+        dragDiv.style.left = '-1000px';
+        dragDiv.style.zIndex = '9999';
+
+        document.body.appendChild(dragDiv);
+
+        ev.dataTransfer.setDragImage(dragDiv, 10, 10);
+
+        ev.target.addEventListener('dragend', function cleanup() {
+            if (dragDiv.parentNode) {
+                document.body.removeChild(dragDiv);
+            }
+            ev.target.removeEventListener('dragend', cleanup);
+        });
     }
+
 
     function dragover_handler(ev) {
         ev.preventDefault();
@@ -166,22 +207,23 @@
 
             tbody.insertBefore(draggedTr, droppedTr);
 
+            // console.log(prev, next)
             const prev = draggedTr.previousElementSibling;
             const next = draggedTr.nextElementSibling;
 
-            const prevId = prev ? prev.id : null;
+            const prevId = prev ? prev.id : '0';
             const nextId = next ? next.id : null;
 
-            // console.log("Dropped:", draggedTr.id);
-            // console.log("Previous ID:", prevId);
-            // console.log("Next ID:", nextId);
+            console.log("Dropped:", draggedTr.id);
+            console.log("Previous ID:", prevId);
+            console.log("Next ID:", nextId);
 
             var arrastado = draggedTr.id.split('_')
             var id_layout_arrastado = arrastado[0]
             var posicao_arrastado = arrastado[1]
 
             var ids = prevId.split('_')
-            var id_layout = ids[0]
+            // var id_layout = ids[0]
             var posicao_alvo = ids[1]
 
             itemAlterado = {
@@ -190,8 +232,10 @@
                 id_layout: parseInt(id_layout_arrastado),
             }
             method_post('layout_colunas/novaOrdenacao', itemAlterado)
-            atualizaOrdem(itemAlterado)
-            atualizarPosicoes();
+            location.reload()
+
+            // atualizaOrdem(itemAlterado)
+            // atualizarPosicoes();
         }
     }
 

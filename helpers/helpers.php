@@ -6,7 +6,7 @@ date_default_timezone_set('America/Sao_Paulo');
 function dd(...$array)
 {
     echo '<pre style="background-color: #2c2c2c; color: #ccff33; font-size: 16px; padding: 2px; word-wrap: break-word; white-space: pre-wrap; width: auto;">';
-    foreach ($array as $key => $value) {
+    foreach ($array as $value) {
         var_dump($value);
     }
     echo '</pre>';
