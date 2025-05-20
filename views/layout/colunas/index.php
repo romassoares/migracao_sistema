@@ -10,12 +10,12 @@
                 <form id="id_form" action="layout/update" method="post">
                     <input type="hidden" name="id" id="id" value="<?php echo $layout->id ?>">
                     <div class="d-flex">
-                        <input type="text" id="nome" name="nome" class="form-control" value="<?php echo $layout->nome ?>">
+                        <input type="text" id="nome" name="nome" class="form-control form-control-sm" value="<?php echo $layout->nome ?>">
                         <button type="submit" class="btn btn-primary btn-sm">salvar</button>
                     </div>
                 </form>
             </div>
-            <div class="col-2">
+            <div class="col-2 d-flex justify-content-end">
                 <a href="layout/index" class="btn btn-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a>
             </div>
         </div>
@@ -89,11 +89,11 @@
                 </div>
                 <div class="d-flex justify-content-around align-items-center mt-3 gap-2">
                     <h6 for="nome_exibicao" class="font_blue">Nome</h6>
-                    <input type="text" name="nome_exibicao" id="nome_exibicao" class="form-control">
+                    <input type="text" name="nome_exibicao" id="nome_exibicao" class="form-control form-control-sm">
                 </div>
                 <div class="d-flex justify-content-around align-items-center mt-3 gap-2">
                     <h6 for="tipo">Tipo</h6>
-                    <select name="tipo" id="tipo" class="form-control">
+                    <select name="tipo" id="tipo" class="form-control form-control-sm">
                         <option value="livre">Livre</option>
                         <option value="email">Email</option>
                         <option value="telefone">Telefone</option>
@@ -186,9 +186,10 @@
 
             itemAlterado = {
                 posicao_alvo: parseInt(posicao_alvo),
-                posicao_arrastado: parseInt(posicao_arrastado),
-                id_layout_arrastado: parseInt(id_layout_arrastado),
+                posicao_dragged: parseInt(posicao_arrastado),
+                id_layout: parseInt(id_layout_arrastado),
             }
+            method_post('layout_colunas/novaOrdenacao', itemAlterado)
             atualizaOrdem(itemAlterado)
             atualizarPosicoes();
         }

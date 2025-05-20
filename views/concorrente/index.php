@@ -6,15 +6,15 @@
     </div>
     <div class="card-body">
         <div class="d-flex justify-content-end">
-            <button class="btn btn-primary">NOVO</button>
+            <button class="btn btn-primary btn-sm">NOVO</button>
         </div>
-        <div class="d-flex">
+        <div class="d-flex mt-3">
             <div class=" card col-4 p-2">
                 <form id="id_form" action="concorrente/store" method="post">
                     <input type="hidden" name="id" id="id">
                     <div class="d-flex">
-                        <input type="text" id="nome" name="nome" class="form-control">
-                        <button type="submit" class="btn btn-primary">salvar</button>
+                        <input type="text" id="nome" name="nome" class="form-control form-control-sm">
+                        <button type="submit" class="btn btn-primary btn-sm">salvar</button>
                     </div>
                 </form>
             </div>
@@ -35,7 +35,7 @@
                                 <td><?php echo $concorrente['nome'] ?></td>
                                 <td>
                                     <div class="d-flex">
-                                        <button onclick="setFieldsForUpdate('<?php echo $concorrente['id'] ?>','<?php echo $concorrente['nome'] ?>')" class="btn btn-primary"><i class="bi bi-pencil"></i></button>
+                                        <button onclick="setFieldsForUpdate('<?php echo $concorrente['id'] ?>','<?php echo $concorrente['nome'] ?>')" class="btn btn-primary btn-sm"><i class="bi bi-pencil"></i></button>
                                     </div>
                                 </td>
                             </tr>

@@ -51,7 +51,7 @@
                 </div>
                 <div class="d-flex justify-content-around align-items-center mt-3">
                     <h6 for="nome" class="font_blue">Nome</h6>
-                    <input type="text" name="nome" id="nome" class="form-control mx-2">
+                    <input type="text" name="nome" id="nome" class="form-control mx-2 form-control-sm">
                 </div>
                 </form>
             </div>

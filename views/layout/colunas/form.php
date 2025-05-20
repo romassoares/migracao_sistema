@@ -18,11 +18,11 @@
                     <div class="d-flex gap-2">
                         <div class="col">
                             <label for="nome_exibicao">Nome da Coluna</label>
-                            <input type="text" id="nome_exibicao" name="nome_exibicao" class="form-control" value="<?php echo $layout_coluna->nome_exibicao ?>">
+                            <input type="text" id="nome_exibicao" name="nome_exibicao" class="form-control form-control-sm" value="<?php echo $layout_coluna->nome_exibicao ?>">
                         </div>
                         <div class="col">
                             <label for="tipo">Tipo</label>
-                            <select name="tipo" id="tipo" class="form-control">
+                            <select name="tipo" id="tipo" class="form-control form-control-sm">
                                 <option <?php echo strtolower($layout_coluna->tipo) == 'livre' ? "selected" : '' ?> value="livre">Livre</option>
 
                                 <option <?php echo strtolower($layout_coluna->tipo) == 'email' ? "selected" : '' ?> value="email">Email</option>
@@ -72,8 +72,8 @@
                                     </div>
                                     <hr>
                                     <div class="col-sm-12 text-center">
-                                        <a href="layout_colunas/deleteConteudosColuna?id_layout_coluna=<?= $layout_coluna->id ?>&id_layout=<?= $layout_coluna->id_layout ?>" class='btn btn-success'>Sim</a>
-                                        <a class="btn btn-danger">Não</a>
+                                        <a href="layout_colunas/deleteConteudosColuna?id_layout_coluna=<?= $layout_coluna->id ?>&id_layout=<?= $layout_coluna->id_layout ?>" class='btn btn-success btn-sm'>Sim</a>
+                                        <a class="btn btn-danger btn-sm">Não</a>
                                     </div>
                                 </div>
                                 <!--  -->
@@ -92,11 +92,11 @@
                                         <div class="d-flex gap-2">
                                             <div class="col">
                                                 <label for="">Conteudo</label>
-                                                <input type="text" id="conteudo" name="conteudo[nome][]" class="form-control" value="<?php echo strval($layout_coluna->flags[$i]['conteudo']) ?>">
+                                                <input type="text" id="conteudo" name="conteudo[nome][]" class="form-control form-control-sm" value="<?php echo strval($layout_coluna->flags[$i]['conteudo']) ?>">
                                             </div>
                                             <div class="col">
                                                 <label for="">Descrição</label>
-                                                <input type="text" id="descricao" name="conteudo[descricao][]" class="form-control" value="<?php echo $layout_coluna->flags[$i]['descricao'] ?>">
+                                                <input type="text" id="descricao" name="conteudo[descricao][]" class="form-control form-control-sm" value="<?php echo $layout_coluna->flags[$i]['descricao'] ?>">
                                             </div>
                                             <div class="col-1 d-flex align-items-center">
                                                 <button onclick="removerConteudo(<?= $i ?>)" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></button>
@@ -113,7 +113,7 @@
             </div>
             <div class="col-12 mt-3">
                 <div class="d-flex justify-content-center">
-                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Salvar</button>
                 </div>
             </div>
         </form>
@@ -173,7 +173,7 @@
         var el_input_conteudo = document.createElement("input")
         el_input_conteudo.id = 'conteudo'
         el_input_conteudo.name = 'conteudoNew[nome][]'
-        el_input_conteudo.className = 'form-control'
+        el_input_conteudo.className = 'form-control form-control-sm'
 
         el_div_conteudo.appendChild(el_label_conteudo)
         el_div_conteudo.appendChild(el_input_conteudo)
@@ -191,7 +191,7 @@
         var el_input_descricao = document.createElement("input")
         el_input_descricao.id = 'descricao'
         el_input_descricao.name = 'conteudoNew[descricao][]'
-        el_input_descricao.className = 'form-control'
+        el_input_descricao.className = 'form-control form-control-sm'
 
         el_div_descricao.appendChild(el_label_descricao)
         el_div_descricao.appendChild(el_input_descricao)
