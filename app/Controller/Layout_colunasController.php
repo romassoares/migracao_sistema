@@ -201,16 +201,15 @@ function novaOrdenacao($data)
     $database = 'migracao';
     $db = new DB();
 
-    $regras = [
-        'posicao_alvo' => ['required' => true, 'type' => 'int'],
-        'posicao_dragged' => ['required' => true, 'type' => 'string'],
-        'id_layout' => ['required' => true, 'type' => 'int']
-    ];
-    $request = validateRequest($data, $regras);
-
-    $id_layout = $request['dados']['id_layout'];
-    $posicao_alvo = $request['dados']['posicao_alvo'];
-    $posicao_dragged = intval($request['dados']['posicao_dragged']);
+    // $regras = [
+    //     'posicao_alvo' => ['required' => true, 'type' => 'int'],
+    //     'posicao_dragged' => ['required' => true, 'type' => 'int'],
+    //     'id_layout' => ['required' => true, 'type' => 'int']
+    // ];
+    // $request = validateRequest($data, $regras);
+    $id_layout = $data['id_layout'];
+    $posicao_alvo = intval($data['posicao_alvo']) + 1;
+    $posicao_dragged = intval($data['posicao_dragged']) + 1;
 
     $sql = "SELECT * FROM layout_colunas WHERE id = $id_layout";
     $item_alvo = metodo_get($sql, 'migracao');
@@ -221,29 +220,29 @@ function novaOrdenacao($data)
     try {
         if ($posicao_alvo > $posicao_dragged) { // Mover de cima pra baixo
             $sql = "UPDATE layout_colunas 
-                    SET posicao = posicao - 1 
-                    WHERE id_layout = ? 
-                    AND posicao > ? 
-                    AND posicao <= ?";
-            insert_update($sql, "iii", [$id_layout, $posicao_dragged, $posicao_alvo], $database);
-        } else { // Mover de baixo pra cima
-            $sql = "UPDATE layout_colunas 
-                    SET posicao = posicao + 1 
+                    SET posicao = case when id = ? then ? else posicao - 1 end
                     WHERE id_layout = ? 
                     AND posicao >= ? 
-                    AND posicao < ?";
-            insert_update($sql, "iii", [$id_layout, $posicao_alvo, $posicao_dragged], $database);
+                    AND posicao <= ?";
+            insert_update($sql, "iiiii", [$item_alvo->id, $posicao_alvo, $item_alvo->id_layout, $posicao_dragged, $posicao_alvo], $database);
+        } else { // Mover de baixo pra cima
+            $sql = "UPDATE layout_colunas 
+                    SET posicao = case when id = ? then ? else posicao + 1 end
+                    WHERE id_layout = ? 
+                    AND posicao <= ? 
+                    AND posicao >= ?";
+            insert_update($sql, "iiiii", [$item_alvo->id, $posicao_alvo, $item_alvo->id_layout, $posicao_dragged, $posicao_alvo], $database);
         }
 
         // $sql = "SELECT id FROM layout_colunas WHERE id_layout = $id_layout AND posicao = $posicao_alvo";
         // $item_alvo = metodo_get($sql, 'migracao');
 
         // Atualiza item arrastado
-        $sql_dragged = "UPDATE layout_colunas 
-                        SET posicao = ? 
-                        WHERE id_layout = ? 
-                        AND id = ?";
-        insert_update($sql_dragged, "iii", [$posicao_alvo, $item_alvo->id_layout, $item_alvo->id], $database);
+        // $sql_dragged = "UPDATE layout_colunas 
+        //                 SET posicao = ? 
+        //                 WHERE id_layout = ? 
+        //                 AND id = ?";
+        // insert_update($sql_dragged, "iii", [$posicao_alvo, $item_alvo->id_layout, $item_alvo->id], $database);
 
         // Renumera todas as posições sequencialmente a partir de 1
         // $query = metodo_all("SELECT id FROM layout_colunas WHERE id_layout = {$id_layout} ORDER BY posicao ASC", $database);
