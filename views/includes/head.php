@@ -2,9 +2,6 @@
 include_once __DIR__ . ('/../../app/core/includes.php');
 $version = '1.0';
 
-if (isset($_SESSION['logged']))
-    unset($_SESSION['logged']);
-
 $caminho_sistema = __DIR__ . '/../../';
 ?>
 <!DOCTYPE html>
@@ -23,11 +20,11 @@ $caminho_sistema = __DIR__ . '/../../';
 
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2-bootstrap-theme/0.1.0-beta.10/select2-bootstrap.css" integrity="sha512-CbQfNVBSMAYmnzP3IC+mZZmYMP2HUnVkV4+PwuhpiMUmITtSpS7Prr3fNncV1RBOnWxzz4pYQ5EAGG4ck46Oig==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <base href="<?= rtrim(dirname($_SERVER['SCRIPT_NAME']), '/') ?>/">
+    <!-- <base href="<?= rtrim(dirname($_SERVER['SCRIPT_NAME']), '/') ?>/"> -->
     <link rel="stylesheet" href="views/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap4-duallistbox/4.0.2/bootstrap-duallistbox.css" integrity="sha512-8TCY/k+p0PQ/9+htlHFRy3AVINVaFKKAxZADSPH3GSu3UWo2eTv9FML0hJZrvNQbATtPM4fAw3IS31Yywn91ig==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 
 <body>
-
     <?php include_once __DIR__ . './menu_lateral.php' ?>
+    <div class="container-fluid" style="margin-left: 260px; padding: 1rem;">
