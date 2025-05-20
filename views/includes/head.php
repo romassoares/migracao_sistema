@@ -25,6 +25,5 @@ $caminho_sistema = __DIR__ . '/../../';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap4-duallistbox/4.0.2/bootstrap-duallistbox.css" integrity="sha512-8TCY/k+p0PQ/9+htlHFRy3AVINVaFKKAxZADSPH3GSu3UWo2eTv9FML0hJZrvNQbATtPM4fAw3IS31Yywn91ig==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 
-<body>
+<body style="margin-left: 260px; padding: 1rem;">
     <?php include_once __DIR__ . './menu_lateral.php' ?>
-    <div class="container-fluid" style="margin-left: 260px; padding: 1rem;">

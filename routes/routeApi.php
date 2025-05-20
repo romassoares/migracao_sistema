@@ -1,6 +1,6 @@
 <?php
 include_once __DIR__ . ('/../app/core/includes.php');
-include_once __DIR__ . ('/../app/Auth/auth.php');
+include_once __DIR__ . ('/../app/Controller/AuthController.php');
 require_once __DIR__ . '/../helpers/helpers.php';
 include_once __DIR__ . '/../session.php';
 include_once __DIR__ . '/../routes/navigate.php';
@@ -18,7 +18,7 @@ if ($method === 'OPTIONS') {
 
 $uri = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 
-$uri = str_replace('migracao_sistema', '', $uri);
+$uri = str_replace('migracao_sistema/', '', $uri);
 
 // if (!isAuthenticated())
 //     return redirect('auth/login');

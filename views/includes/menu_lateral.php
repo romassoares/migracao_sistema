@@ -45,7 +45,7 @@
             <i class="bi bi-building fs-3 me-2"></i>
             <div>
                 <div class="fw-bold small">Cliente</div>
-                <div class="text-white-50"><?php echo htmlspecialchars($_SESSION['company']['name'] ?? ''); ?></div>
+                <div class="text-white-50"><?php echo htmlspecialchars($_SESSION['company']['nome'] ?? ''); ?></div>
             </div>
         </div>
     </div>

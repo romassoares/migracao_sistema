@@ -60,5 +60,3 @@
         el_form.setAttribute('action', new_action);
     }
 </script>
-
-<?php include_once __DIR__ . '/../../includes/footer.php' ?>

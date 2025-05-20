@@ -1,6 +1,6 @@
 <?php include_once __DIR__ . '/../includes/head.php' ?>
 
-<div class="card col-10">
+<div class="card col-12">
     <div class="card-header">
         Layouts
     </div>
@@ -23,7 +23,7 @@
                                 <td>
 
                                     <div class="d-flex">
-                                        <a href="layout_colunas/index?id=<?php echo $layout['id'] ?>" class="btn btn-primary btn-sm"><i class="bi bi-pencil"></i></a>
+                                        <a href="/layout_colunas/index?id=<?php echo $layout['id'] ?>" class="btn btn-primary btn-sm"><i class="bi bi-pencil"></i></a>
                                     </div>
                                 </td>
                             </tr>
@@ -92,5 +92,3 @@
         order: [],
     });
 </script>
-
-<?php include_once __DIR__ . '/../../includes/footer.php' ?>
