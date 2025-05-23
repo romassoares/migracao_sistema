@@ -31,14 +31,14 @@ function trata_json_request($json)
 function validateRequest($data_post, $regras)
 {
     $dados = [];
-    $erros = [];
+    $erros = '';
 
     foreach ($regras as $campo => $regra) {
 
         if ($regra['type'] == "email") {
             $valor = isset($data_post[$campo]) ? trim($data_post[$campo]) : '';
             if (!filter_var($valor, FILTER_VALIDATE_EMAIL)) {
-                $erros[$campo] = "O campo '$campo' deve ser um e-mail válido.";
+                $erros .= "O campo '$campo' deve ser um e-mail válido.<br/>";
             }
             $dados[$campo] = trim($valor);
             // continue;
@@ -54,7 +54,7 @@ function validateRequest($data_post, $regras)
         if ($regra['type'] == "int") {
             $valor = isset($data_post[$campo]) ? trim($data_post[$campo]) : 0;
             if (!filter_var($valor, FILTER_VALIDATE_INT)) {
-                $erros[$campo] = "O campo '$campo' deve ser um número inteiro.";
+                $erros .= "O campo '$campo' deve ser um número inteiro.<br/>";
             }
             $dados[$campo] = (int)$valor;
             // continue;
@@ -70,16 +70,14 @@ function validateRequest($data_post, $regras)
         if ($regra['type'] == "array") {
             $valor = isset($data_post[$campo]) ? $data_post[$campo] : [];
             if (!is_array($valor)) {
-                $erros[$campo] = "O campo '$campo' deve ser um array válido.";
+                $erros .= "O campo '$campo' deve ser um array válido.<br/>";
             }
             $dados[$campo] = $valor;
             // continue;
         }
 
-
-
         if (!empty($regra['required']) && (empty($valor) || (is_array($valor) && count($valor) == 0))) {
-            $erros[$campo] = "O campo '$campo' é obrigatório.";
+            $erros .= "O campo '$campo' é obrigatório.<br/>";
             continue;
         }
 

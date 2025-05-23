@@ -1,13 +1,13 @@
 <?php include_once __DIR__ . '/../../includes/head.php' ?>
 
-<div class="card col-10">
+<div class="card col-12">
     <div class="card-header">
         Atualização de Layouts
     </div>
     <div class="card-body">
         <div class="d-flex justify-content-between mb-3 gap-2">
             <div class="col-4">
-                <form id="id_form" action="layout/update" method="post">
+                <form id="id_form" action="/layout/update" method="post">
                     <input type="hidden" name="id" id="id" value="<?php echo $layout->id ?>">
                     <div class="d-flex">
                         <input type="text" id="nome" name="nome" class="form-control form-control-sm" value="<?php echo $layout->nome ?>">
@@ -16,7 +16,7 @@
                 </form>
             </div>
             <div class="col-2 d-flex justify-content-end">
-                <a href="layout/index" class="btn btn-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a>
+                <a href="/layout/index" class="btn btn-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a>
             </div>
         </div>
         <!-- <div class="d-flex"> -->
@@ -54,7 +54,7 @@
                             <td>
                                 <div class="d-flex">
                                     <div class="col">
-                                        <a href="layout_colunas/edit?id_layout=<?php echo $layout->id ?>&id_layout_coluna=<?php echo $colunas['id'] ?>" class="btn btn-primary btn-sm"><i class="bi bi-pencil"></i></a>
+                                        <a href="/layout_colunas/edit?id_layout=<?php echo $layout->id ?>&id_layout_coluna=<?php echo $colunas['id'] ?>" class="btn btn-primary btn-sm"><i class="bi bi-pencil"></i></a>
                                     </div>
                                     <div class="col">
                                         <a class="btn btn-danger btn-sm dropdown dropdown-toggle" id="dropdownMenuButtonDestroyLayoutConteudos" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -67,7 +67,7 @@
                                             </div>
                                             <hr>
                                             <div class="col-sm-12 text-center">
-                                                <a href="layout_colunas/delete?id_layout=<?php echo $layout->id ?>&id_layout_coluna=<?php echo $colunas['id'] ?>" class='btn btn-success btn-sm'>Sim</a>
+                                                <a href="/layout_colunas/delete?id_layout=<?php echo $layout->id ?>&id_layout_coluna=<?php echo $colunas['id'] ?>" class='btn btn-success btn-sm'>Sim</a>
                                                 <a class="btn btn-danger btn-sm">Não</a>
                                             </div>
                                         </div>
@@ -136,8 +136,9 @@
         </div>
     </div>
 </div>
-
 <?php include_once __DIR__ . '/../../includes/scripts.php' ?>
+<script rel="stylesheet" src="../../views/js/metodos_axios.js?version=<?= $version ?>"></script>
+<script rel="stylesheet" src="../../views/js/functions.js?version=<?= $version ?>"></script>
 <script>
     var ids_order = '<?php echo json_encode($ids_order) ?>'
     var itemAlterado = {}
@@ -231,7 +232,7 @@
                 posicao_dragged: parseInt(posicao_arrastado),
                 id_layout: parseInt(id_layout_arrastado),
             }
-            method_post('layout_colunas/novaOrdenacao', itemAlterado)
+            method_post('/layout_colunas/novaOrdenacao', itemAlterado)
             location.reload()
 
             // atualizaOrdem(itemAlterado)

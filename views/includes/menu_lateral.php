@@ -52,6 +52,11 @@
     <nav class="flex-grow-1 px-4 py-3">
         <ul class="nav flex-column gap-2">
             <li class="nav-item">
+                <a href="/conversao/index" class="nav-link text-white d-flex align-items-center">
+                    <i class="bi bi-file-arrow-up me-2"></i> Conversão
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="/layout/index" class="nav-link text-white d-flex align-items-center">
                     <i class="bi bi-layout-text-sidebar-reverse me-2"></i> Layout
                 </a>
@@ -76,7 +81,9 @@
             </a>
             <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
                 <li><a class="dropdown-item" href="/auth/trocar_senha">Mudar senha</a></li>
-                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
                 <li><a class="dropdown-item" href="/auth/logout">Logout</a></li>
             </ul>
         </div>
