@@ -98,6 +98,7 @@ switch ($uri) {
         require __DIR__ . '/../app/Controller/ConversaoController.php';
         uploadArquivo();
         break;
+
     // ==============================================
     default:
         if (!isAuthenticated()) {

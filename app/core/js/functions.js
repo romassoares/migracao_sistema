@@ -1,7 +1,8 @@
-function montaSelect(ref_id_select, ref_id_data, ref_value_data, data) {
+function montaSelect(ref_id_select, ref_id_data, ref_value_data, attr, data) {
     const el_selec = document.querySelector(ref_id_select);
 
     el_selec.innerHTML = '';
+
 
     const optionSelecione = document.createElement('option')
     optionSelecione.textContent = 'Selecione ...'
@@ -10,9 +11,15 @@ function montaSelect(ref_id_select, ref_id_data, ref_value_data, data) {
 
     // console.log(typeof data)
     data.forEach(element => {
+        // console.log(element)
         const option = document.createElement('option');
-        option.value = element[ref_id_data];
-        option.textContent = element[ref_value_data];
+
+        if (attr !== '')
+            option.setAttribute(attr, element[attr]);
+
+        option.value = ref_id_data !== '' ? element[ref_id_data] : element;
+
+        option.textContent = attr !== '' ? element[ref_value_data] : element;
         el_selec.appendChild(option);
     });
 

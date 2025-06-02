@@ -1,29 +1,9 @@
 <?php
-
+include_once __DIR__ . '/../core/functions.php';
 class XmlToArrayService
 {
     public function convert($filePath)
     {
-        // $reader = new XMLReader();
-        // $reader->open($filePath);
-
-        // $result = [];
-
-        // while ($reader->read()) {
-        //     if ($reader->nodeType == XMLReader::ELEMENT) {
-        //         $node = $reader->expand();
-        //         $dom = new DOMDocument();
-        //         $node = $dom->importNode($node, true);
-        //         $dom->appendChild($node);
-
-        //         $result[] = simplexml_load_string($dom->saveXML());
-        //     }
-        // }
-
-        // $reader->close();
-        // return $result;
-
-
         $xml = simplexml_load_file($filePath);
         $children = [];
 
@@ -32,34 +12,72 @@ class XmlToArrayService
             $this->trata_objeto($tag, $record);
             $children[] = $record;
         }
-        return $children;
+        $caminhos_absolutos = [];
+        $this->monta_caminhos_absolutos_arquivo($children, $caminhos_absolutos);
+        $retorno = array_unique($caminhos_absolutos);
+
+        return [$retorno, $children];
     }
 
     public function trata_objeto(SimpleXMLElement $element, array &$record)
     {
         foreach ($element->children() as $prop => $child) {
-            $childRecord = [];
-
             $attributes = [];
+
             foreach ($child->attributes() as $attrKey => $attrValue) {
                 $attributes[$attrKey] = (string) $attrValue;
             }
 
             if ($child->count() > 0) {
+                $childRecord = [];
                 $this->trata_objeto($child, $childRecord);
-                if (!empty($attributes)) {
-                    $record[$prop][] = ['@attributes' => $attributes, '@children' => $childRecord];
-                } else {
-                    $record[$prop][] = $childRecord;
-                }
-            } else {
-                $value = str_replace("'", '', (string) $child);
 
                 if (!empty($attributes)) {
-                    $record[$prop][] = ['@attributes' => $attributes, '@value' => $value];
-                } else {
-                    $record[$prop][] = $value;
+                    $childRecord = array_merge(['@attributes' => $attributes], $childRecord);
                 }
+
+                if (isset($record[$prop])) {
+                    if (!is_array($record[$prop]) || !isset($record[$prop][0])) {
+                        $record[$prop] = [$record[$prop]];
+                    }
+                    $record[$prop][] = $childRecord;
+                } else {
+                    $record[$prop] = $childRecord;
+                }
+            } else {
+                $value = (string) $child;
+                if (!empty($attributes)) {
+                    $record[$prop] = ['@attributes' => $attributes, '@value' => $value];
+                } else {
+                    $record[$prop] = $value;
+                }
+            }
+        }
+    }
+
+    public function monta_caminhos_absolutos_arquivo($items, &$caminhos_absolutos, $prefix = '')
+    {
+        foreach ($items as $key => $value) {
+            $segment = '';
+            if (is_numeric($key)) {
+                if (empty($prefix)) {
+                    $segment = '';
+                } else {
+                    $segment = $prefix;
+                }
+            } else {
+                if ($prefix === '') {
+                    $segment = $key;
+                } else {
+                    $segment = $prefix . '.' . $key;
+                }
+            }
+            $currentPrefix = $segment;
+
+            if (is_array($value)) {
+                $this->monta_caminhos_absolutos_arquivo($value, $caminhos_absolutos, $currentPrefix);
+            } elseif (is_scalar($value) || is_null($value)) {
+                $caminhos_absolutos[] = $currentPrefix;
             }
         }
     }

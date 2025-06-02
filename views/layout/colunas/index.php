@@ -95,7 +95,7 @@
             </div>
             <div class="modal-body">
                 <div class="d-flex justify-content-center">
-                    <form action="layout_colunas/store" method="post" id="id_form">
+                    <form action="/layout_colunas/store" method="post" id="id_form">
                         <input type="hidden" name="id_layout" value="<?php echo $layout->id ?>">
                         <div class="m-2 order-1" id="div_btn_form_inserUpda">
                             <button type="submit" class="btn btn-success btn-sm" id="btn_submit">Inserir</button>

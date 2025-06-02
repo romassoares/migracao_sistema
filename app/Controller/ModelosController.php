@@ -12,7 +12,10 @@ function index()
 
 function getModelos($data)
 {
-    $sql_modelos = 'SELECT * FROM modelos WHERE id_concorrente = ' . $data['id_concorrente'];
+    $sql_modelos = 'SELECT id_modelo, nome_modelo, descr_tipo_arquivo 
+        FROM modelos 
+        LEFT JOIN tipos_arquivos t ON modelos.id_tipo_arquivo = t.id_tipo_arquivo
+        WHERE id_concorrente = ' . $data['id_concorrente'] . ' AND ativo = 1';
     $modelos = metodo_all($sql_modelos, 'migracao');
 
     return_api(200, '', ['modelos' => $modelos]);
@@ -38,15 +41,14 @@ function store($data)
     $dados = $request['dados'];
     $dados['modelo_novo'] = 's';
     $dados['ativo'] = 1;
-    // dd($dados);
-
 
     $sql_insert_modelo = "INSERT INTO modelos (nome_modelo, id_layout, id_concorrente, id_tipo_arquivo, modelo_novo, ativo) VALUES (?,?,?,?,?,?)";
     $id_modelo = insert_update($sql_insert_modelo, "siiisi", $dados, 'migracao');
 
-    $sql_get_modelo = "SELECT m.id_modelo, m.nome_modelo, l.id AS id_layout, l.nome AS nome_layout 
+    $sql_get_modelo = "SELECT m.id_modelo, m.nome_modelo, t.descr_tipo_arquivo, l.id AS id_layout, l.nome AS nome_layout 
     FROM modelos AS m 
     LEFT JOIN layout AS l ON m.id_layout = l.id 
+    LEFT JOIN tipos_arquivos AS t ON m.id_tipo_arquivo = t.id_tipo_arquivo
     WHERE m.id_modelo = $id_modelo";
     $modelo = metodo_get($sql_get_modelo, 'migracao');
 

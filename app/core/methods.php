@@ -34,7 +34,6 @@ function insert_update($sql, $binds, $data, $database)
 {
     global $db;
 
-    // Obter uma única instância da conexão
     $conn = $db->connect($database);
 
     $stmt = $conn->prepare($sql);
@@ -57,7 +56,7 @@ function insert_update($sql, $binds, $data, $database)
         die('Failed to execute statement in insert update execute: ' . $stmt->error);
     }
 
-    $lastInsertId = $conn->insert_id; // Agora está usando a mesma conexão da execução
+    $lastInsertId = $conn->insert_id;
 
     $stmt->close();
 

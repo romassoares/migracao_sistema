@@ -4,10 +4,13 @@ require __DIR__ . "/../../vendor/autoload.php";
 include_once __DIR__ . '/ExcelToArrayService.php';
 include_once __DIR__ . '/XmlToArrayService.php';
 include_once __DIR__ . '/CsvToArrayService.php';
+include_once __DIR__ . '/SqlToArrayService.php';
+include_once __DIR__ . '/JsonToArrayService.php';
 
 
 class ConvertService
 {
+
     private $conversor_class;
     public function converter($tmpFile, $extension_file, $descr_tipo_arquivo)
     {
@@ -21,6 +24,12 @@ class ConvertService
 
             if ($extension_file == 'csv')
                 $this->conversor_class = new CsvToArrayService($extension_file);
+
+            if ($extension_file == 'sql')
+                $this->conversor_class = new SqlToArrayService($extension_file);
+
+            if ($extension_file == 'json')
+                $this->conversor_class = new JsonToArrayService($extension_file);
 
             return $this->conversor_class->convert($tmpFile);
         } else {
@@ -47,16 +56,9 @@ class ConvertService
                 if (count($attributesTag) > 0) {
                     $record[$prop] = [$attributesTag, (string) $value];
                 } else {
-                    // if (is_object($value)) {
-                    //     dd("objeto ", $prop, $attributesTag, (string) $value, $value);
-                    // }
-                    // if (is_array($value)) {
-                    //     dd("objeto ", $prop, $attributesTag, (string) $value, $value);
-                    // }
                     $record[$prop] = (string) $value;
                 }
             }
-            // dd($prop, $value, $attributesTag, $record[$prop]);
         }
     }
 }

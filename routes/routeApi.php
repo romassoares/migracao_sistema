@@ -38,10 +38,22 @@ switch ($uri) {
         require $baseDir . 'ModelosController.php';
         $explodeUri[1]($data);
         break;
-    // case '/conversao/uploadArquivo':
-    //     require $baseDir . 'ConversaoController.php';
-    //     $explodeUri[1]($data);
-    //     break;
+    case 'conversao/salvaArquivo':
+        require  $baseDir . 'ConversaoController.php';
+        $explodeUri[1]($data);
+        break;
+    case 'conversao/salvaVinculacaoConvertidoLayout':
+        require  $baseDir . 'ConversaoController.php';
+        $explodeUri[1]($data);
+        break;
+    case 'conversao/EditVinculacaoArquivo':
+        require  $baseDir . 'ConversaoController.php';
+        $explodeUri[1]($data);
+        break;
+    case 'conversao/removeVinculacaoConvertidoLayout':
+        require  $baseDir . 'ConversaoController.php';
+        $explodeUri[1]($data);
+        break;
     // ==============================================
     default:
         return_api(404, 'not found');

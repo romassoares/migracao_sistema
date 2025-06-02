@@ -1,2 +1,6 @@
 # Ignorar env
 .env
+
+#ignorar tudo que estiver dentro de assets
+assets/*
+!assets/.gitkeep

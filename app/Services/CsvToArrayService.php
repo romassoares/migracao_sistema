@@ -13,6 +13,7 @@ class CsvToArrayService
         $worksheet = $spreadsheet->getActiveSheet();
 
         $data = $worksheet->toArray();
+
         return $data;
     }
 }
