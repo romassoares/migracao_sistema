@@ -19,6 +19,7 @@ $(document).ready(function () {
 
 
     if (modelo.id_concorrente) {
+        document.querySelector("#load").style.display = 'block'
         dispararEventoEmSelect(document.querySelector("#concorrente_id"), modelo.id_concorrente)
 
         setTimeout(() => {
@@ -53,20 +54,18 @@ $(document).ready(function () {
 
                     const valor = el[1].descricao_coluna;
 
-                    // desativa onchange temporariamente
                     const oldOnChange = el_select.onchange;
                     el_select.onchange = null;
 
-                    // define valor corretamente no Select2
                     $(el_select).val(valor).trigger('change.select2');
 
-                    // desabilita a opção após seleção
                     const optionToDisable = el_select.querySelector(`option[value="${valor}"]`);
                     if (optionToDisable) {
                         optionToDisable.disabled = true;
                     }
+                    document.querySelector("#load").style.display = 'none'
                     atualizaColunas(el_select)
-                    // restaura onchange
+
                     el_select.onchange = oldOnChange;
                 });
             }, 500)
@@ -235,7 +234,6 @@ document.querySelector("#id_form_modelo").addEventListener("submit", async funct
 
 document.querySelector("#id_form_upload_arquivo").addEventListener('submit', async function (e) {
     e.preventDefault()
-
     document.querySelector("#div_upload_arquivo").className = 'd-none'
 
     document.querySelector("#load").style.display = 'block'

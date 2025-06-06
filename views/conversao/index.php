@@ -68,6 +68,11 @@
                 <tbody id="tbody_values_convertidos">
 
                 </tbody>
+                <tfoot>
+                    <div class="col-2">
+                        <a class=" <?= !empty($modelo->id_modelo) ? 'd-flex' : 'd-none' ?>" id="btn-detalhar">Ir para Detalhamento</a>
+                    </div>
+                </tfoot>
             </table>
         </div>
     </div>
@@ -126,4 +131,10 @@
 <script>
     var modelo = <?= json_encode($modelo) ?>;
     var modelos_colunas = <?= json_encode($modelos_colunas) ?>;
+    var btnDetalhar = document.querySelector("#btn-detalhar")
+
+    if (Object.keys(modelo).length > 0)
+        btnDetalhar.className = 'btn btn-primary d-flex'
+
+    // /modelo/detalhar?id=
 </script>

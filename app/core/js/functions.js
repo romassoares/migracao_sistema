@@ -19,7 +19,7 @@ function montaSelect(ref_id_select, ref_id_data, ref_value_data, attr, data) {
 
         option.value = ref_id_data !== '' ? element[ref_id_data] : element;
 
-        option.textContent = attr !== '' ? element[ref_value_data] : element;
+        option.textContent = ref_value_data !== '' ? element[ref_value_data] : element;
         el_selec.appendChild(option);
     });
 

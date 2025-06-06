@@ -4,7 +4,6 @@ include_once(__DIR__ . '/../../routes/navigate.php');
 
 function index()
 {
-    $id_concorrente = isset($_GET['id_concorrente']) ? $_GET['id_concorrente'] : '';
     $id_modelo = isset($_GET['id_modelo']) ? $_GET['id_modelo'] : '';
 
     $modelos_colunas = new stdClass();
@@ -14,7 +13,7 @@ function index()
         $sql_modelo = "SELECT * FROM modelos WHERE id_modelo = $id_modelo";
         $modelo = metodo_get($sql_modelo, 'migracao');
         if (isset($modelo->id_modelo)) {
-            $sql_modelos_colunas = "SELECT * FROM modelos_colunas WHERE id_modelo = $modelo->id_modelo AND id_concorrente = $id_concorrente";
+            $sql_modelos_colunas = "SELECT * FROM modelos_colunas WHERE id_modelo = $modelo->id_modelo AND id_concorrente = $modelo->id_concorrente";
             $modelos_colunas = metodo_all($sql_modelos_colunas, 'migracao');
         }
     }
