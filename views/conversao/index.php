@@ -70,7 +70,9 @@
                 </tbody>
                 <tfoot>
                     <div class="col-2">
-                        <a class=" <?= !empty($modelo->id_modelo) ? 'd-flex' : 'd-none' ?>" id="btn-detalhar">Ir para Detalhamento</a>
+                        <?php if (!empty($modelo->id_modelo)) { ?>
+                            <a href="/modelo/detalhar?id=<?= $modelo->id_modelo ?>" class="d-flex" id="btn-detalhar">Ir para Detalhamento</a>
+                        <?php } ?>
                     </div>
                 </tfoot>
             </table>
