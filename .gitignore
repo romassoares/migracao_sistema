@@ -1,2 +1,11 @@
 # Ignorar env
 .env
+#ignorar tudo que estiver dentro de assets
+assets/*
+!assets/.gitkeep
+/vendor
+.gitignore
+.idea/php.xml
+.idea/modules.xml
+.idea/migracao.iml
+.idea/vcs.xml

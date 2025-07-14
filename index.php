@@ -5,6 +5,8 @@ $version = '1.0';
 $isAxios = isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 
+require 'vendor/autoload.php';
+
 $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
 if ($isAxios || strpos($contentType, 'application/json') !== false) {
     require_once './routes/routeApi.php';

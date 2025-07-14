@@ -90,6 +90,21 @@ switch ($uri) {
         redirect('layout_colunas/deleteConteudosColuna');
         break;
     // ==============================================
+    case 'modelo/index':
+        redirect('modelo/index');
+        break;
+    case 'modelo/create':
+        redirect('modelo/create');
+        break;
+    case 'modelo/store':
+        redirect('modelo/store');
+        break;
+    case 'modelo/detalhar':
+        redirect('modelo/detalhar');
+        break;
+    case 'modelo/gerar-arquivo-geral':
+        redirect('modelo/gerarArquivoGeral');
+        break;
     default:
         if (!isAuthenticated()) {
             header('Location: /auth/login');

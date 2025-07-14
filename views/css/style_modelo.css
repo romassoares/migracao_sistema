@@ -1,0 +1,14 @@
+.dataTables_filter {
+    text-align: left !important;
+    width: 100%;
+}
+.dataTables_filter label {
+    width: 100%;
+}
+.dataTables_filter input {
+    width: 100% !important;
+    max-width: 200px;
+}
+#table_colunas thead tr:first-child th {
+    border-bottom: 0 !important;
+}

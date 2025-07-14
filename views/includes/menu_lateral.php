@@ -66,6 +66,11 @@
                     <i class="bi bi-columns-gap me-2"></i> Layout colunas
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="/modelo/index" class="nav-link text-white d-flex align-items-center">
+                    <i class="bi bi-briefcase me-2"></i> Modelos
+                </a>
+            </li>
         </ul>
     </nav>
     <div class="border-top border-secondary px-4 py-3">

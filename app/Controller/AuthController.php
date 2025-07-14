@@ -116,8 +116,15 @@ function salvarSenha()
             if ($nova_senha === $confirma_senha) {
                 
                 $sql = 'UPDATE usuarios SET password_usuario=? WHERE id_usuario=?';
+                $senha_hash = password_hash($nova_senha, PASSWORD_DEFAULT);
 
-                insert_update($sql, "si", [password_hash($senha, PASSWORD_DEFAULT), $id], 'migracao');
+                $stmt = $db->connect('migracao')->prepare($sql);
+                $stmt->bind_param('si', $senha_hash, $id);
+
+                if (!$stmt->execute()) {
+                    die('Failed to execute statement in insert update execute: ' . $stmt->error);
+                }
+                
                 return ['view' => 'auth/trocar_senha', 'data' => ['success' => 'Senha alterada com sucesso.']];
             } else {
                 $erro = 'As novas senhas não conferem.';
