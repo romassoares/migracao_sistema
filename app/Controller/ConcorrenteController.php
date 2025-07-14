@@ -16,7 +16,6 @@ function store()
     $request = validateRequest($_POST, $regras);
 
     $dados = $request['dados'];
-    // $dados['ativo'] = 1;
 
     $sql = "INSERT INTO concorrentes (nome) VALUES (?)";
 

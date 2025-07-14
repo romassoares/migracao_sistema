@@ -11,8 +11,10 @@ $uri = $_SERVER['REQUEST_URI'];
 $uri = parse_url($uri, PHP_URL_PATH);
 
 $uri = trim($uri, '/');
+// dd($uri);
 
-$uri = str_replace('migracao_sistema/', '', $uri);
+// $uri = str_replace('', '', $uri);
+// $uri = str_replace('migracao_sistema/', '', $uri);
 
 // if (!isAuthenticated())
 //     return redirect('auth/login');
@@ -25,7 +27,6 @@ $uri = str_replace('migracao_sistema/', '', $uri);
 //     $uri = substr($uri, strlen($_SESSION['rota_atual']));
 //     $uri = ltrim($uri, '/'); // remove a barra inicial se existir
 // }
-// dd($uri);
 
 
 switch ($uri) {
@@ -50,7 +51,7 @@ switch ($uri) {
         break;
     case 'auth/logout':
         redirect('auth/logout');
-    // ==============================================
+        // ==============================================
     case 'layout/index':
         redirect('layout/index');
         break;
@@ -89,6 +90,15 @@ switch ($uri) {
     case 'layout_colunas/deleteConteudosColuna':
         redirect('layout_colunas/deleteConteudosColuna');
         break;
+    // ==============================================
+        case 'conversao/index':
+        redirect('conversao/index');
+        break;
+    case 'conversao/uploadArquivo':
+        require __DIR__ . '/../app/Controller/ConversaoController.php';
+        uploadArquivo();
+        break;
+
     // ==============================================
     case 'modelo/index':
         redirect('modelo/index');

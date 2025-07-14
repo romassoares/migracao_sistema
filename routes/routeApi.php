@@ -10,7 +10,7 @@ $json = file_get_contents('php://input');
 $data = (array) trata_json_request($json);
 
 $method = $_SERVER['REQUEST_METHOD'];
-
+// dd('$uri');
 if ($method === 'OPTIONS') {
     http_response_code(204);
     exit;
@@ -18,27 +18,42 @@ if ($method === 'OPTIONS') {
 
 $uri = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 
-$uri = str_replace('migracao_sistema/', '', $uri);
+// $uri = str_replace('migracao_sistema/', '', $uri);
 
-// if (!isAuthenticated())
-//     return redirect('auth/login');
-
-// if (!companySelected())
-//     return redirect('auth/selectCompany');
-
-
-// $_SESSION['logged'] = true;
 $baseDir = __DIR__ . '/../app/Controller/';
 
 $explodeUri = explode('/', $uri);
-
+// dd($uri);
 switch ($uri) {
     case '/layout_colunas/novaOrdenacao':
         require $baseDir . 'Layout_colunasController.php';
         $explodeUri[2]($data);
         break;
     // ==============================================
-
+    case 'modelos/getModelos':
+        require $baseDir . 'ModelosController.php';
+        $explodeUri[1]($data);
+        break;
+    case 'modelos/store':
+        require $baseDir . 'ModelosController.php';
+        $explodeUri[1]($data);
+        break;
+    case 'conversao/salvaArquivo':
+        require  $baseDir . 'ConversaoController.php';
+        $explodeUri[1]($data);
+        break;
+    case 'conversao/salvaVinculacaoConvertidoLayout':
+        require  $baseDir . 'ConversaoController.php';
+        $explodeUri[1]($data);
+        break;
+    case 'conversao/EditVinculacaoArquivo':
+        require  $baseDir . 'ConversaoController.php';
+        $explodeUri[1]($data);
+        break;
+    case 'conversao/removeVinculacaoConvertidoLayout':
+        require  $baseDir . 'ConversaoController.php';
+        $explodeUri[1]($data);
+        break;
     // ==============================================
     default:
         return_api(404, 'not found');

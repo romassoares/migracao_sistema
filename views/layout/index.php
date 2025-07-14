@@ -1,12 +1,14 @@
 <?php include_once __DIR__ . '/../includes/head.php' ?>
 
+<link rel="stylesheet" href="../views/css/style.css">
+
 <div class="card col-12">
     <div class="card-header">
         Layouts
     </div>
     <div class="card-body">
         <div class="d-flex">
-            <div class="card col-12 mx-2 p-2">
+            <div class="card col-12 p-2">
                 <table id="table_layout" class="table table-striped">
                     <thead>
                         <tr>
@@ -44,7 +46,7 @@
             </div>
             <div class="modal-body">
                 <div class="d-flex justify-content-center">
-                    <form action="layout/store" method="post" id="id_form">
+                    <form action="/layout/store" method="post" id="id_form">
                         <div class="m-2 order-1" id="div_btn_form_inserUpda">
                             <button type="submit" class="btn btn-success btn-sm" id="btn_submit">Inserir</button>
                         </div>
@@ -65,6 +67,8 @@
 </div>
 
 <?php include_once __DIR__ . '/../includes/scripts.php' ?>
+<script rel="stylesheet" src="../views/js/metodos_axios.js?version=<?= $version ?>"></script>
+<script rel="stylesheet" src="../views/js/functions.js?version=<?= $version ?>"></script>
 <script>
     $('#table_layout').DataTable({
         language: {

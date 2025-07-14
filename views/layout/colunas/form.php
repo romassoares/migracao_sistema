@@ -1,16 +1,16 @@
 <?php include_once __DIR__ . '/../../includes/head.php' ?>
 
-<div class="card col-10">
+<div class="card col-12">
     <div class="card-header">
         Atualização de Layouts
     </div>
     <div class="card-body">
         <div class="col-12">
             <div class="d-flex justify-content-end">
-                <a href="layout_colunas/index?id=<?php echo $layout_coluna->id_layout ?>" class="btn btn-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a>
+                <a href="/layout_colunas/index?id=<?php echo $layout_coluna->id_layout ?>" class="btn btn-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a>
             </div>
         </div>
-        <form id="" action="layout_colunas/update" method="post">
+        <form id="" action="/layout_colunas/update" method="post">
             <div class="col-12 mt-2">
                 <div class="col card p-2">
                     <input type="hidden" name="id_layout" id="id_layout" value="<?= $layout_coluna->id_layout ?>">
@@ -72,7 +72,7 @@
                                     </div>
                                     <hr>
                                     <div class="col-sm-12 text-center">
-                                        <a href="layout_colunas/deleteConteudosColuna?id_layout_coluna=<?= $layout_coluna->id ?>&id_layout=<?= $layout_coluna->id_layout ?>" class='btn btn-success btn-sm'>Sim</a>
+                                        <a href="/layout_colunas/deleteConteudosColuna?id_layout_coluna=<?= $layout_coluna->id ?>&id_layout=<?= $layout_coluna->id_layout ?>" class='btn btn-success btn-sm'>Sim</a>
                                         <a class="btn btn-danger btn-sm">Não</a>
                                     </div>
                                 </div>
@@ -138,7 +138,7 @@
             habilitaDesabilita = true
 
         document.querySelector("#btns_add_remove_conteudo").className = habilitaDesabilita == true ? 'd-none' : 'd-flex gap-2'
-        console.log(habilitaDesabilita)
+        // console.log(habilitaDesabilita)
 
         var container = document.querySelector('#card_conteudo')
         const elementsToDisable = container.querySelectorAll('input, select, textarea, button, fieldset');

@@ -46,8 +46,7 @@ function edit()
             SEPARATOR ' || '
         ) AS flags 
     FROM layout_colunas 
-    inner JOIN layout_coluna_conteudos AS l_c_d ON layout_colunas.id = l_c_d.id_layout_colunas  
-    -- inner JOIN layout_coluna_depara AS l_c_d ON layout_colunas.id = l_c_d.id_layout_coluna  
+    inner JOIN layout_coluna_conteudos AS l_c_d ON layout_colunas.id = l_c_d.id_layout_colunas   
     WHERE layout_colunas.id_layout = $id_layout AND layout_colunas.id = $id_layout_coluna";
     $layout_coluna = metodo_get($sql, 'migracao');
 
@@ -67,7 +66,6 @@ function store()
     ];
     $request = validateRequest($_POST, $regras);
     $dados = $request['dados'];
-    // dd($dados);
 
     $sql = "INSERT INTO layout_colunas (id_layout, nome_exibicao, tipo, obrigatorio, posicao)
     VALUES (?, ?, ?, ?, COALESCE(
@@ -105,12 +103,12 @@ function update()
     $request = validateRequest($_POST, $regras);
 
     $dados = $request['dados'];
-    // dd($dados);
+
     $id_layout = $dados['id_layout'];
     $id_layout_coluna = $dados['id_layout_coluna'];
 
-    // =======================================================================================
-    // =======================================================================================
+    // =======================================================================
+    // =======================================================================
 
     if (isset($dados['conteudo']) && count($dados['conteudo']) > 0) {
         $qnt_items_conteudo = count($dados['conteudo']['colunas_conteudo_id']);
@@ -128,8 +126,8 @@ function update()
         }
     }
 
-    // =======================================================================================
-    // =======================================================================================
+    // =======================================================
+    // =======================================================
 
 
     if (isset($dados['conteudoNew']) && count($dados['conteudoNew']) > 0) {
@@ -142,7 +140,7 @@ function update()
             $sqlBaseInsert .= " ($id_layout_coluna, '$nomes_data_new[$i]', '$decricao_data_new[$i]'),";
         }
         $sqlBaseInsert = substr($sqlBaseInsert, 0, -1);
-        // dd($sqlBaseInsert);
+
         $db->connect('migracao')->query($sqlBaseInsert);
     }
 
@@ -172,8 +170,6 @@ function deleteConteudosColuna()
 
     $sql = "DELETE FROM layout_coluna_conteudos WHERE id_layout_colunas = ?";
     insert_update($sql, 'i', [$dados->id_layout_coluna], 'migracao');
-
-    // dd("edit/?id_layout=" . $dados->id_layout . "&id_layout_coluna=" . $dados->id_layout_coluna);
 
     return ['view' => '', 'data' => [], 'function' => "edit/?id_layout=" . $dados->id_layout . "&id_layout_coluna=" . $dados->id_layout_coluna];
 }
@@ -210,7 +206,7 @@ function delete()
             $item_alvo->id_layout,
             $item_alvo->posicao
         ], $database);
-        // return_api(200);
+
         $db->commit($database);
         return ['view' => '', 'data' => [], 'function' => "index/?id=" . $id_layout];
     } catch (Exception $e) {

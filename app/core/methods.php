@@ -34,10 +34,12 @@ function insert_update($sql, $binds, $data, $database)
 {
     global $db;
 
-    $stmt = $db->connect($database)->prepare($sql);
+    $conn = $db->connect($database);
+
+    $stmt = $conn->prepare($sql);
 
     if (!$stmt)
-        die('Failed to prepare statement in insert or update: ' . $db->connect($database)->error);
+        die('Failed to prepare statement in insert or update: ' . $conn->error);
 
     $params = [];
     foreach ($data as &$value)
@@ -46,13 +48,15 @@ function insert_update($sql, $binds, $data, $database)
     array_unshift($params, $binds);
     call_user_func_array([$stmt, 'bind_param'], $params);
 
-    if (!$stmt->execute())
+    if (!$stmt->execute()) {
+        // Checar erro de chave duplicada
+        if ($stmt->errno == 1062)
+            die('Erro: O item já está cadastrado');
+
         die('Failed to execute statement in insert update execute: ' . $stmt->error);
+    }
 
-    if ($stmt->errno == 1062)
-        die('Erro" O item já está cadastrado');
-
-    $lastInsertId = $db->connect($database)->insert_id;
+    $lastInsertId = $conn->insert_id;
 
     $stmt->close();
 
