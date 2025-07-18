@@ -85,9 +85,11 @@ function detalhar()
     }
 
     $sql = "SELECT 
-            id_arquivo, 
-            nome_arquivo 
-            FROM arquivos 
+            a.id_arquivo, 
+            a.nome_arquivo,
+            c.nome
+            FROM arquivos a
+            LEFT JOIN concorrentes c ON c.id = a.id_cliente
             WHERE id_cliente = ?  AND id_modelo = ?
             ORDER BY id_arquivo
             ;";
@@ -127,19 +129,20 @@ function detalhar()
     $result = $stmt->get_result();
     $colunas = $result->fetch_all(MYSQLI_ASSOC);
 
-    $dadosArquivo = lerArquivoCsv($colunas);
+    $dadosArquivo = lerArquivoCsv($colunas, $arquivos, $modelo);
 
     return ['view' => 'modelo/detalhar', 'data' => ['modelo' => $modelo, 'colunas' => $colunas, 'arquivos' => $arquivos, 'dadosArquivo' => $dadosArquivo ], 'function' => ''];
 }
 
-function lerArquivoCsv($colunas)
+function lerArquivoCsv($colunas, $arquivos, $modelo)
 {
     $nome_colunas = [];
     foreach ($colunas as $index => $coluna) {
         $nome_colunas[$index]['nome_layout_coluna'] = $coluna['nome_layout_coluna'];
     }
 
-    $caminho = __DIR__ . '/../../uploads/imoveis.csv';
+
+    $caminho = __DIR__ . '/../../assets/'.$arquivos['nome'].'/'.$modelo['nome_modelo'].'/'.$arquivos['nome_arquivo'];
     $dados = [];
 
     if (!file_exists($caminho)) {
