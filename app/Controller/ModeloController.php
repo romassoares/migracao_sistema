@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../core/includes.php';
+
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -75,22 +76,24 @@ function detalhar()
             LEFT JOIN concorrentes c ON m.id_concorrente = c.id 
             LEFT JOIN tipos_arquivos ta ON m.id_tipo_arquivo = ta.id_tipo_arquivo
             WHERE id_modelo = $id_modelo;";
-    
+
     // $modelo = metodo_get($sql, 'migracao');
     $query = $db->connect('migracao')->query($sql);
     $modelo = $query->fetch_assoc();
 
+
+
     if (!$modelo) {
         die('Modelo não encontrado');
     }
-
+    // dd($_SESSION['company'], $modelo['id_modelo']);
     $sql = "SELECT 
             a.id_arquivo, 
             a.nome_arquivo,
-            c.nome
+            c.nome_cliente
             FROM arquivos a
-            LEFT JOIN concorrentes c ON c.id = a.id_cliente
-            WHERE id_cliente = ?  AND id_modelo = ?
+            LEFT JOIN clientes c ON c.id_cliente = a.id_cliente
+            WHERE a.id_cliente = ? AND a.id_modelo = ?
             ORDER BY id_arquivo
             ;";
 
@@ -103,7 +106,7 @@ function detalhar()
 
     $result = $stmt->get_result();
     $arquivos = $result->fetch_all(MYSQLI_ASSOC);
-
+    // dd($arquivos);
     $sql = "SELECT 
             mc.id_modelo_coluna, 
             mc.descricao_coluna AS nome_modelo_coluna,
@@ -121,7 +124,7 @@ function detalhar()
 
     $stmt = $db->connect('migracao')->prepare($sql);
     $stmt->bind_param('ii', $modelo['id_concorrente'], $modelo['id_layout']);
-    
+
     if (!$stmt->execute()) {
         die('Failed to execute statement in insert update execute: ' . $stmt->error);
     }
@@ -131,7 +134,7 @@ function detalhar()
 
     $dadosArquivo = lerArquivoCsv($colunas, $arquivos, $modelo);
 
-    return ['view' => 'modelo/detalhar', 'data' => ['modelo' => $modelo, 'colunas' => $colunas, 'arquivos' => $arquivos, 'dadosArquivo' => $dadosArquivo ], 'function' => ''];
+    return ['view' => 'modelo/detalhar', 'data' => ['modelo' => $modelo, 'colunas' => $colunas, 'arquivos' => $arquivos, 'dadosArquivo' => $dadosArquivo], 'function' => ''];
 }
 
 function lerArquivoCsv($colunas, $arquivos, $modelo)
@@ -141,8 +144,8 @@ function lerArquivoCsv($colunas, $arquivos, $modelo)
         $nome_colunas[$index]['nome_layout_coluna'] = $coluna['nome_layout_coluna'];
     }
 
-
-    $caminho = __DIR__ . '/../../assets/'.$arquivos['nome'].'/'.$modelo['nome_modelo'].'/'.$arquivos['nome_arquivo'];
+    // dd($arquivos);
+    $caminho = __DIR__ . '/../../assets/' . $arquivos[0]['nome_cliente'] . '/' . $modelo['nome_modelo'] . '/' . $modelo['id_modelo'] . '/' . $arquivos[0]['nome_arquivo'];
     $dados = [];
 
     if (!file_exists($caminho)) {
