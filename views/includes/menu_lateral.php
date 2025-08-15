@@ -76,6 +76,11 @@
                     <i class="bi bi-briefcase me-2"></i> Modelos
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="/conversao/convertidos" class="nav-link text-white d-flex align-items-center">
+                    <i class="bi bi-briefcase me-2"></i> Convertidos
+                </a>
+            </li>
         </ul>
     </nav>
     <div class="border-top border-secondary px-4 py-3">

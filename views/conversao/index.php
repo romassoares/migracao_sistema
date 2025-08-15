@@ -12,15 +12,11 @@
     }
 </style>
 
-
-
 <div class="card col-12">
-    <div class="card-header">
-        Conversão
-    </div>
+    <div class="card-header">Conversão</div>
     <div class="card-body">
         <div class="d-flex">
-            <div class="card col p-2 gap-2">
+            <div class="card col-md-6 col-sm-12 p-2 gap-2">
                 <form id="id_form" action="conversao/store" method="post">
                     <div class="col">
                         <label for="concorrente_id">Concorrente</label>
@@ -30,7 +26,6 @@
                                 <option <?= (isset($modelo->id_concorrente) && $modelo->id_concorrente == $concorrente['id']) ? 'selected' : '' ?> value="<?php echo $concorrente['id'] ?>"><?php echo $concorrente['nome'] ?></option>
                             <?php } ?>
                         </select>
-
                     </div>
                     <div class="col-12 mt-2">
                         <label for="modelo_id">Modelo</label>
@@ -52,32 +47,33 @@
                         <div class="col-12">
                             <input type="file" name="arquivo" id="arquivo" class="form-control form-control-sm">
                         </div>
-                        <div class="col mt-2">
-                            <button type="submit" class="btn btn-success btn-sm">
-                                carregar arquivo
-                            </button>
-                        </div>
+                        <?php if (empty($modelo->id_modelo)) { ?>
+                            <div class="col mt-2">
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    carregar arquivo
+                                </button>
+                            </div>
+                        <?php } ?>
                     </form>
+                    <?php if (!empty($modelo->id_modelo)) { ?>
+                        <div class="col mt-2">
+                            <button type="button" onclick="processaArquivo()" class="btn btn-primary d-flex'">Processa arquivo</button>
+                        </div>
+                    <?php } ?>
                 </div>
             </div>
         </div>
-        <div class="col-12 word-wrap overflow-auto mt-4 m-2" id="div_arquivo_convertido">
-        </div>
-        <div class="col-12 overflow-auto mt-2">
-            <table class="table table-striped">
-                <tbody id="tbody_values_convertidos">
-
-                </tbody>
-                <tfoot>
-                    <div class="col-2">
-                        <?php if (!empty($modelo->id_modelo)) { ?>
-                            <a href="/modelo/detalhar?id=<?= $modelo->id_modelo ?>" class="d-flex" id="btn-detalhar">Ir para Detalhamento</a>
-                        <?php } ?>
-                    </div>
-                </tfoot>
-            </table>
-        </div>
     </div>
+    <div class="col-12 word-wrap overflow-auto mt-4 m-2" id="div_arquivo_convertido">
+    </div>
+    <div class="col-12 overflow-auto mt-2">
+        <table class="table table-striped">
+            <tbody id="tbody_values_convertidos">
+
+            </tbody>
+        </table>
+    </div>
+</div>
 </div>
 <img id="load" style="display:none" class="loader" src="../../views/assets/imgload.svg" alt="">
 <!--  -->
@@ -133,10 +129,4 @@
 <script>
     var modelo = <?= json_encode($modelo) ?>;
     var modelos_colunas = <?= json_encode($modelos_colunas) ?>;
-    var btnDetalhar = document.querySelector("#btn-detalhar")
-
-    if (Object.keys(modelo).length > 0)
-        btnDetalhar.className = 'btn btn-primary d-flex'
-
-    // /modelo/detalhar?id=
 </script>

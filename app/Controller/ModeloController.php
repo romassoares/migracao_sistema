@@ -5,6 +5,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
+
 $db = new DB();
 
 function index()
@@ -167,36 +168,177 @@ function lerArquivoCsv($colunas, $arquivos, $modelo)
     return $dados;
 }
 
-function gerarArquivoGeral()
+function processaArquivo($data)
 {
-    $csvPath = __DIR__ . '/../../uploads/imoveis.csv';
+    $sql = "SELECT *, l.nome FROM modelos AS m
+        LEFT JOIN tipos_arquivos as t ON m.id_tipo_arquivo = t.id_tipo_arquivo
+        LEFT JOIN layout as l ON m.id_layout = l.id
+        LEFT JOIN concorrentes as c ON m.id_concorrente = c.id
+        WHERE id_modelo =" . $data['id_modelo'];
+    $modelo = metodo_get($sql, 'migracao');
 
-    if (!file_exists($csvPath)) {
-        die('Arquivo CSV não encontrado.');
-    }
+    $modelo_colunas = metodo_all("SELECT * FROM modelos_colunas WHERE id_modelo = " . $data['id_modelo'] . " order by posicao_coluna", 'migracao');
 
-    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $layout_colunas = metodo_all("SELECT * FROM layout_colunas WHERE id_layout = $modelo->id_layout ORDER BY posicao", 'migracao');
+
+    $arquivo = metodo_get("SELECT * FROM arquivos WHERE id_modelo = $modelo->id_modelo and id_cliente = $modelo->id_concorrente LIMIT 1", 'migracao');
+
+    $arq_cli = "./assets/" . $_SESSION['company']['nome'] . '/' . $modelo->nome_modelo . '/' . $modelo->id_modelo . '/' . $arquivo->nome_arquivo;
+
+    if (!file_exists($arq_cli))
+        die('Arquivo não encontrado.');
+
+    $extension_file = pathinfo($arquivo->nome_arquivo, PATHINFO_EXTENSION);
+
+    $convert = new ConvertService();
+    $converted = $convert->converter($arq_cli, $extension_file, $modelo->descr_tipo_arquivo);
+
+    $headers = $converted[0];
+    $data = $converted[1];
+
+    $spreadsheet = new Spreadsheet();
     $sheet = $spreadsheet->getActiveSheet();
 
-    if (($handle = fopen($csvPath, "r")) !== false) {
-        $row = 1;
-        while (($data = fgetcsv($handle, 1000, ",")) !== false) {
-            foreach ($data as $col => $value) {
-                $sheet->setCellValue([$col + 1, $row], $value);
-            }
-            $row++;
+    $spreadsheet_criticado = new Spreadsheet();
+    $sheet_criticado = $spreadsheet->getActiveSheet();
+
+    $spreadsheet_sem_critica = new Spreadsheet();
+    $sheet_sem_critica = $spreadsheet->getActiveSheet();
+
+    // Monta os cabeçalhos com base em modelo_colunas
+    $colunas = [];
+    $colIndex = 1; // Coluna A = 1
+    $rowIndex = 1; // Linha 1 para cabeçalho
+
+    foreach ($modelo_colunas as $coluna) {
+        $descricao_coluna = $coluna['descricao_coluna'];
+
+        // Verifica se está presente no header do arquivo convertido
+        if (in_array($descricao_coluna, $headers)) {
+            $colunas[] = $descricao_coluna;
+            $cell = columnLetter($colIndex) . $rowIndex;
+            $sheet->setCellValue($cell, $descricao_coluna);
+
+            $sheet_criticado->setCellValue($cell, $descricao_coluna);
+            $sheet_sem_critica->setCellValue($cell, $descricao_coluna);
+            $colIndex++;
         }
-        fclose($handle);
-    } else {
-        die('Não foi possível abrir o arquivo CSV.');
     }
+
+    // Preenche os dados
+    $rowIndex = 2; // Começa na linha 2 para os dados
+
+    foreach ((array) $data[0] as $key => $row) {
+        $colIndex = 1;
+
+        foreach ((array) $modelo_colunas as $coluna) {
+            $valor = '';
+
+            $valor = PercorreArrayDataConvertidoComModeloColuna($coluna, $row);
+
+            var_dump($valor);
+            die;
+
+            // if (array_key_exists($key . "." . $coluna['descricao_coluna'], $row)) {
+            //     var_dump($row, $coluna, 'S');
+            // } else {
+            //     var_dump($row, $coluna, 'N');
+            // }
+            // var_dump($row, $key);
+            // die;
+            // -------------------------------
+            // --------------luiz-----------------
+            // $valor = '';
+            // $tmp_arrary = $row;
+
+            // foreach ($explode as $i => $item) {
+            //     if (is_array($tmp_arrary) && is_array($tmp_arrary[$item])) {
+            //         if (array_key_exists(0, $tmp_arrary[$item])) {
+            //             $tmp_arrary = $tmp_arrary[$item][0];
+            //         } else {
+            //             $tmp_arrary = $tmp_arrary[$item];
+            //         }
+            //     } else {
+            //         $valor = $tmp_arrary[$item];
+            //     }
+            // }
+            // -------------------------------
+            // --------------luiz-----------------
+            // if (array_key_exists($key . "." . $coluna['descricao_coluna'], $row)) {
+            //     var_dump('achou');
+            //     die();
+            //     if (is_array($row[$coluna['descricao_coluna']]) && isset($row[$key . "." . $coluna['descricao_coluna']]['valor'])) {
+            //         $valor = $row[$key . "." . $coluna['descricao_coluna']]['valor'];
+            //     } else {
+            //         $valor = $row[$key . "." . $coluna];
+            //     }
+            //     // }
+            //     $row = $row[$explode[$i]];
+            // } else {
+            //     $row = '';
+            //     break;
+            // }
+
+            $cell = columnLetter($colIndex) . $rowIndex;
+            $sheet->setCellValue($cell, $valor);
+
+            // criar função se tem valor e se é obrigatorio
+            if (!empty($valor)) {
+                $sheet_criticado->setCellValue($cell, $valor);
+            } else {
+            }
+            $sheet_sem_critica->setCellValue($cell, $valor);
+
+            $colIndex++;
+        }
+        $rowIndex++;
+    }
+
+    // Salvar em arquivo (opcional)
+    // $writer = new Xlsx($spreadsheet);
+    // $writer->save('relatorio.xlsx');
 
     // Envia o arquivo XLSX para download sem salvar no disco
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    header('Content-Disposition: attachment;filename="imoveis.xlsx"');
+    header('Content-Disposition: attachment;filename="arquivos.xlsx"');
     header('Cache-Control: max-age=0');
 
     $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
     $writer->save('php://output');
     exit;
+}
+
+function PercorreArrayDataConvertidoComModeloColuna($coluna, $row)
+{
+
+    $explode = explode('.', $coluna['descricao_coluna']);
+    $tmp = $row;
+    foreach ($explode as $key) {
+        var_dump($key, $tmp);
+        die;
+
+        if (is_array($tmp) && array_key_exists($key, $tmp)) {
+            $tmp = $tmp[$key];
+        } else {
+            // Se não encontrar, retorna vazio
+            return '';
+        }
+    }
+    // Se o valor final for array e tiver chave 'valor', retorna ela
+    if (is_array($tmp) && isset($tmp['valor'])) {
+        return $tmp['valor'];
+    }
+    return $tmp;
+}
+
+function columnLetter($colIndex)
+{
+    $dividend = $colIndex;
+    $columnName = '';
+    while ($dividend > 0) {
+        $modulo = ($dividend - 1) % 26;
+        $columnName = chr(65 + $modulo) . $columnName;
+        $dividend = (int)(($dividend - $modulo) / 26);
+    }
+    return $columnName;
 }

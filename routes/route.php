@@ -91,7 +91,7 @@ switch ($uri) {
         redirect('layout_colunas/deleteConteudosColuna');
         break;
     // ==============================================
-        case 'conversao/index':
+    case 'conversao/index':
         redirect('conversao/index');
         break;
     case 'conversao/uploadArquivo':
@@ -112,9 +112,10 @@ switch ($uri) {
     case 'modelo/detalhar':
         redirect('modelo/detalhar');
         break;
-    case 'modelo/gerar-arquivo-geral':
-        redirect('modelo/gerarArquivoGeral');
+    case 'conversao/convertidos':
+        redirect('conversao/convertidos');
         break;
+
     default:
         if (!isAuthenticated()) {
             header('Location: /auth/login');

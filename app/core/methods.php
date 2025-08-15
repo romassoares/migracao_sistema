@@ -26,7 +26,7 @@ function metodo_all($sql, $database)
     if ($query === false)
         die(strval($db->connect($database)->error));
 
-    return (object) $query->fetch_all(MYSQLI_ASSOC);
+    return $query->fetch_all(MYSQLI_ASSOC);
 }
 
 // -------------------------------------------------------------------------------

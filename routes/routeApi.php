@@ -54,6 +54,12 @@ switch ($uri) {
         require  $baseDir . 'ConversaoController.php';
         $explodeUri[1]($data);
         break;
+
+    case 'modelo/processaArquivo':
+        require $baseDir . 'ModeloController.php';
+        $explodeUri[1]($data);
+        // redirect('modelo/processaArquivo');
+        break;
     // ==============================================
     default:
         return_api(404, 'not found');

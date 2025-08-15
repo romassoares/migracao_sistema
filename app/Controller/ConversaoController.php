@@ -4,7 +4,11 @@ include_once(__DIR__ . '/../../routes/navigate.php');
 
 function index()
 {
+    // $id_modelo = isset($_GET['id_modelo']) ? $_GET['id_modelo'] : '199';
+
     $id_modelo = isset($_GET['id_modelo']) ? $_GET['id_modelo'] : '';
+
+    // $id_modelo = isset($_GET['id_modelo']) ? $_GET['id_modelo'] : '';
 
     $modelos_colunas = new stdClass();
     $modelo = new stdClass();
@@ -92,11 +96,14 @@ function uploadArquivo()
 
         $qntItems = count($converted) - 1;
 
+        //definição do diretório base
         $dir_base = __DIR__ . '/../../assets/' . $_SESSION['company']['nome'] . '/' . $modelo->nome_modelo . '/' . $modelo->id_modelo . '/';
 
+        //verifica se o diretório existe, se não existir cria
         if (!file_exists($dir_base))
             mkdir($dir_base, 0777, true);
 
+        //verifica se o arquivo já existe, se existir adiciona a data e hora
         if (!copy($tmpFile, $dir_base . $nomeArquivo . '_' . date('i') . '_' . date('s') . '.' . $extension_file)) {
             return_api(404, 'Error ao salvar arquivo', []);
             return;
@@ -138,6 +145,8 @@ function salvaVinculacaoConvertidoLayout($data)
     $id_modelo = $data['id_modelo'];
     $id_concorrente = $data['id_concorrente'];
 
+    $layout_coluna = metodo_get("SELECT * FROM layout_colunas WHERE id = $id_layout_coluna", 'migracao');
+
     // verifica se ja esta cadastrado
     $sql_exist = "SELECT id_modelo_coluna
     FROM modelos_colunas 
@@ -163,10 +172,11 @@ function salvaVinculacaoConvertidoLayout($data)
             $id_concorrente
         ];
     } else {
-        $sql_insert = "INSERT INTO modelos_colunas (descricao_coluna,id_layout_coluna,id_modelo,id_concorrente,ativo) VALUES (?,?,?,?,?)";
-        $binds = 'siiii';
+        $sql_insert = "INSERT INTO modelos_colunas (descricao_coluna, posicao_coluna, id_layout_coluna, id_modelo, id_concorrente, ativo) VALUES (?,?,?,?,?,?)";
+        $binds = 'siiiii';
         $data = [
             $descricao_coluna,
+            $layout_coluna->posicao,
             $id_layout_coluna,
             $id_modelo,
             $id_concorrente,
@@ -250,4 +260,33 @@ function removeVinculacaoConvertidoLayout($data)
     ], 'migracao');
 
     return_api(200);
+}
+
+function convertidos()
+{
+    $sql = "SELECT 
+        a.id_arquivo, 
+        a.nome_arquivo,
+        a.status, 
+        a.id_modelo,
+        m.nome_modelo,
+        c.nome AS nome_concorrente,
+        l.nome AS nome_layout,
+        t_a.descr_tipo_arquivo 
+    FROM arquivos a
+    LEFT JOIN modelos m ON m.id_modelo = a.id_modelo
+    LEFT JOIN concorrentes c ON m.id_concorrente = c.id
+    LEFT JOIN layout l ON m.id_layout = l.id
+    LEFT JOIN tipos_arquivos t_a ON m.id_tipo_arquivo = t_a.id_tipo_arquivo
+    WHERE a.status = 'E'
+    GROUP BY a.id_arquivo
+    ORDER BY a.id_arquivo DESC";
+
+    $convertidos = metodo_all($sql, 'migracao');
+    // dd($convertidos);
+    return [
+        'view' => 'conversao/convertidos',
+        'data' => ['convertidos' => $convertidos],
+        'function' => ''
+    ];
 }
