@@ -359,25 +359,8 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
             const tbodyValores = document.createElement("tbody")
             tblValores.appendChild(tbodyValores)
 
-            let items = [];
-            if (
-                Array.isArray(convertidos) &&
-                convertidos.length > 0 &&
-                convertidos[0].Imovel &&
-                Array.isArray(convertidos[0].Imovel)
-            ) {
-                const headerParts = header.split('.');
-                const prop = headerParts.length > 1 ? headerParts[1] : headerParts[0];
-
-                items = convertidos[0].Imovel.map((row, i) => {
-
-                    if (typeof row === 'object' && row !== null) return row[prop];
-
-                    if (Array.isArray(row)) return row[idx];
-
-                    return undefined;
-                });
-            }
+            const base = Array.isArray(convertidos) ? convertidos : [convertidos];
+            const items = base.flatMap(row => getValue(row, header));
 
             let count = 0;
             for (let i = 0; i < items.length; i++) {
@@ -388,9 +371,42 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
                 }
                 let item = normalizaValor(items[i]);
                 if (item) {
-                    var el_tr = document.createElement('tr');
-                    var el_td = document.createElement('td');
+                    let el_tr = document.createElement('tr');
+                    let el_td = document.createElement('td');
                     el_td.innerText = item;
+
+                    el_td.style.maxWidth = "150px";
+                    el_td.style.whiteSpace = "nowrap";
+                    el_td.style.overflow = "hidden";
+                    el_td.style.textOverflow = "ellipsis";
+                    el_td.style.cursor = "pointer";
+
+                    el_td.onclick = function () {
+                        let box = document.createElement('div');
+                        box.innerText = item;
+                        box.style.position = "fixed";
+                        box.style.top = "50%";
+                        box.style.left = "50%";
+                        box.style.transform = "translate(-50%, -50%)";
+                        box.style.padding = "20px";
+                        box.style.background = "white";
+                        box.style.border = "1px solid #ccc";
+                        box.style.boxShadow = "0 4px 8px rgba(0,0,0,0.2)";
+                        box.style.zIndex = "9999";
+
+                        let closeBtn = document.createElement('button');
+                        closeBtn.innerText = "Fechar";
+                        closeBtn.style.marginTop = "10px";
+                        closeBtn.onclick = function () {
+                            document.body.removeChild(box);
+                        };
+
+                        box.appendChild(document.createElement("br"));
+                        box.appendChild(closeBtn);
+
+                        document.body.appendChild(box);
+                    };
+
                     el_tr.appendChild(el_td);
                     tbodyValores.appendChild(el_tr);
                     count++;
@@ -406,6 +422,27 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
     }
     document.querySelector("#load").style.display = 'none'
 }
+
+const getValue = (row, header) => {
+    if (row == null) return [];
+
+    const parts = Array.isArray(header)
+        ? header
+        : String(header).split('.').filter(Boolean);
+
+    if (parts.length === 0) {
+        return Array.isArray(row) ? row : [row];
+    }
+
+    const [first, ...rest] = parts;
+
+    if (Array.isArray(row)) {
+        return row.flatMap(r => getValue(r, parts));
+    }
+
+    const next = row?.[first];
+    return getValue(next, rest);
+};
 
 function atualizaColunas() {
     const allSelects = document.querySelectorAll('select[id^="select_layout_coluna_"]');

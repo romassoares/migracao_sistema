@@ -295,9 +295,17 @@ function lerArquivoCsv($colunas, $arquivos, $modelo)
 
 /**
  * Processes a data file, converts it, and generates an Excel spreadsheet.
+ * The core logic is to flatten nested data structures, repeating scalar
+ * values for each item in the longest nested list.
+ *
+ * @param array $data An associative array containing job data, including 'id_modelo'.
  */
 function processaArquivo($data)
 {
+    $DEBUG = true;         // <= habilite passando ['debug'=>true]
+    $DEBUG_MAX_ITEMS = 100;                  // limita quantos itens logar na aba DEBUG
+    $debugRows = [];                         // linhas de debug para escrever na aba
+
     if (ob_get_length()) ob_end_clean();
 
     // Busca modelo
@@ -333,11 +341,224 @@ function processaArquivo($data)
     $spreadsheet = new Spreadsheet();
     $sheet = $spreadsheet->getActiveSheet();
 
-    // Processa o array para excel
-    processaArrayForExcel($modelo_colunas, $dados, $headers, $spreadsheet, $sheet, $modelo);
+    // ---------- Mapeia colunas ----------
+    $columnsUsed = []; // ['header'=>..., 'keys'=>..., 'col'=>...]
+    $colNumber = 1;
+    foreach ($modelo_colunas as $mc) {
+        $descricao_coluna = $mc['descricao_coluna'];
+        if (in_array($descricao_coluna, $headers, true)) {
+            $keys = array_values(array_filter(explode('.', $descricao_coluna), 'strlen'));
+            $columnsUsed[] = [
+                'header' => $descricao_coluna,
+                'keys'   => $keys,
+                'col'    => $colNumber
+            ];
+            setCellValueByColumnAndRow($sheet, $colNumber, 1, $descricao_coluna);
+            $colNumber++;
+        }
+    }
+
+    if (empty($columnsUsed)) {
+        if (ob_get_length()) ob_end_clean();
+        header('Content-Type: text/plain; charset=UTF-8');
+        echo "Nenhuma coluna do modelo corresponde aos headers do arquivo.";
+        exit;
+    }
+
+    // ---------- Escreve dados ----------
+    $rowIndex = 2; // primeira linha útil
+    $itemIndex = 0;
+
+    foreach ($dados as $row) {
+        $itemIndex++;
+        $scalarValues = []; // col => string
+        $listValues   = []; // col => array
+        $maxRows      = 1;
+
+        $perItemDebug = [
+            'item' => $itemIndex,
+            'startRow' => $rowIndex,
+            'columns' => [], // uma entrada por coluna
+        ];
+
+        // 1) Coleta e classifica valores
+        foreach ($columnsUsed as $c) {
+            $vals = getNestedValues($row, $c['keys']);    // sempre array
+            if (!is_array($vals)) $vals = [$vals];
+            // Evita JSON para listas simples de strings no getNestedValues (seu getNestedValues já trata; garantindo aqui)
+            $vals = array_values($vals);
+
+            $cls = classify_list_or_scalar($vals);
+
+            if ($cls['type'] === 'list') {
+                $listValues[$c['col']] = $cls['list'];
+                $maxRows = max($maxRows, count($cls['list']));
+            } else {
+                $scalarValues[$c['col']] = $cls['scalar'];
+            }
+
+            // coleta debug por coluna
+            if ($DEBUG && $itemIndex <= $DEBUG_MAX_ITEMS) {
+                $perItemDebug['columns'][] = [
+                    'col' => $c['col'],
+                    'header' => $c['header'],
+                    'keys' => implode('.', $c['keys']),
+                    'rawCount' => $cls['rawCount'],
+                    'nonEmptyCount' => $cls['nonEmptyCount'],
+                    'type' => $cls['type'],
+                    'scalar' => $cls['type'] === 'scalar' ? $cls['scalar'] : '',
+                    'listLen' => $cls['type'] === 'list' ? count($cls['list']) : 0,
+                    'rawSample' => implode(' | ', $cls['rawSample']),
+                    'nonEmptySample' => implode(' | ', $cls['nonEmptySample']),
+                ];
+            }
+        }
+
+        // 2) Escreve linhas expandidas
+        for ($i = 0; $i < $maxRows; $i++) {
+            foreach ($columnsUsed as $c) {
+                $col = $c['col'];
+                if (isset($listValues[$col])) {
+                    $valor = $listValues[$col][$i] ?? '';
+                } else {
+                    $valor = $scalarValues[$col] ?? '';
+                }
+
+                if (!is_string($valor)) $valor = norm_to_string($valor);
+                if (!mb_check_encoding($valor, 'UTF-8')) {
+                    $valor = mb_convert_encoding($valor, 'UTF-8', 'auto');
+                }
+                setCellValueByColumnAndRow($sheet, $col, $rowIndex + $i, $valor);
+
+                // amostra do que foi escrito (para as 3 primeiras linhas do item)
+                if ($DEBUG && $itemIndex <= $DEBUG_MAX_ITEMS && $i < 3) {
+                    // localiza a entrada de coluna no perItemDebug para anexar 'writtenSample'
+                    $idx = array_search($c['col'], array_column($perItemDebug['columns'], 'col'));
+                    if ($idx !== false) {
+                        if (empty($perItemDebug['columns'][$idx]['writtenSample'])) {
+                            $perItemDebug['columns'][$idx]['writtenSample'] = [];
+                        }
+                        $perItemDebug['columns'][$idx]['writtenSample'][] =
+                            "R" . ($rowIndex + $i) . "C" . $col . "=" . $valor;
+                    }
+                }
+            }
+        }
+
+        // fecha item debug
+        if ($DEBUG && $itemIndex <= $DEBUG_MAX_ITEMS) {
+            $perItemDebug['maxRows'] = $maxRows;
+            $debugRows[] = $perItemDebug;
+        }
+
+        $rowIndex += $maxRows;
+    }
+
+    // ---------- Aba DEBUG ----------
+    if ($DEBUG) {
+        $debugSheet = $spreadsheet->createSheet();
+        $debugSheet->setTitle('DEBUG');
+
+        // cabeçalho
+        $hdr = [
+            'Item',
+            'StartRow',
+            'MaxRows',
+            'Col',
+            'Header',
+            'Keys',
+            'Type',
+            'Scalar',
+            'ListLen',
+            'RawCount',
+            'NonEmptyCount',
+            'RawSample',
+            'NonEmptySample',
+            'WrittenSample(1-3 linhas)'
+        ];
+        $colIdx = 1;
+        foreach ($hdr as $h) {
+            setCellValueByColumnAndRow($debugSheet, $colIdx++, 1, $h);
+        }
+
+        $r = 2;
+        foreach ($debugRows as $itemDbg) {
+            $item = $itemDbg['item'];
+            $start = $itemDbg['startRow'];
+            $max = $itemDbg['maxRows'] ?? 1;
+
+            foreach ($itemDbg['columns'] as $cdbg) {
+                $colIdx = 1;
+                setCellValueByColumnAndRow($debugSheet, $colIdx++, $r, $item);
+                setCellValueByColumnAndRow($debugSheet, $colIdx++, $r, $start);
+                setCellValueByColumnAndRow($debugSheet, $colIdx++, $r, $max);
+                setCellValueByColumnAndRow($debugSheet, $colIdx++, $r, $cdbg['col']);
+                setCellValueByColumnAndRow($debugSheet, $colIdx++, $r, $cdbg['header']);
+                setCellValueByColumnAndRow($debugSheet, $colIdx++, $r, $cdbg['keys']);
+                setCellValueByColumnAndRow($debugSheet, $colIdx++, $r, $cdbg['type']);
+                setCellValueByColumnAndRow($debugSheet, $colIdx++, $r, $cdbg['scalar']);
+                setCellValueByColumnAndRow($debugSheet, $colIdx++, $r, $cdbg['listLen']);
+                setCellValueByColumnAndRow($debugSheet, $colIdx++, $r, $cdbg['rawCount']);
+                setCellValueByColumnAndRow($debugSheet, $colIdx++, $r, $cdbg['nonEmptyCount']);
+                setCellValueByColumnAndRow($debugSheet, $colIdx++, $r, $cdbg['rawSample']);
+                setCellValueByColumnAndRow($debugSheet, $colIdx++, $r, $cdbg['nonEmptySample']);
+                $writtenSample = isset($cdbg['writtenSample']) ? implode(' | ', $cdbg['writtenSample']) : '';
+                setCellValueByColumnAndRow($debugSheet, $colIdx++, $r, $writtenSample);
+                $r++;
+            }
+        }
+    }
+
+    // ---------- Salvar arquivo no servidor (substitui o download) ----------
+    $destinoDir = __DIR__ . '/app/assets'; // ajuste se quiser outro caminho
+    if (!is_dir($destinoDir)) {
+        if (!mkdir($destinoDir, 0755, true) && !is_dir($destinoDir)) {
+            // falha ao criar pasta
+            throw new \RuntimeException("Não foi possível criar pasta de destino: {$destinoDir}");
+        }
+    }
+
+    // nome do arquivo - usa timestamp para evitar sobrescrever
+    $nomeArquivo = "arquivos_" . date("Ymd_His") . ".xlsx";
+    $caminhoFinal = rtrim($destinoDir, '/\\') . DIRECTORY_SEPARATOR . $nomeArquivo;
+
+    try {
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save($caminhoFinal);
+    } catch (\Throwable $e) {
+        // salva log de erro para investigação
+        $errFile = rtrim($destinoDir, '/\\') . DIRECTORY_SEPARATOR . 'save_error_' . date('Ymd_His') . '.log';
+        @file_put_contents($errFile, $e->__toString());
+        throw $e; // rethrow para você ver/registrar no Sentry/laravel log, etc.
+    }
+
+    // verifica se arquivo foi criado com conteúdo
+    if (!file_exists($caminhoFinal) || filesize($caminhoFinal) === 0) {
+        $errFile = rtrim($destinoDir, '/\\') . DIRECTORY_SEPARATOR . 'save_error_zero_' . date('Ymd_His') . '.log';
+        @file_put_contents($errFile, "Arquivo {$caminhoFinal} não existe ou está vazio após save()");
+        throw new \RuntimeException("Falha ao salvar o arquivo em disco: {$caminhoFinal}");
+    }
+
+    // ---------- Salvar DEBUG separado ----------
+    if ($DEBUG) {
+        $debugJson = rtrim($destinoDir, '/\\') . DIRECTORY_SEPARATOR . 'debug_rows_' . date('Ymd_His') . '.json';
+
+        $conteudo = !empty($debugRows)
+            ? json_encode($debugRows, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+            : json_encode(['info' => 'DEBUG habilitado, mas $debugRows está vazio'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        $ok = @file_put_contents($debugJson, $conteudo);
+        if ($ok === false) {
+            throw new \RuntimeException("Falha ao salvar JSON de debug em: {$debugJson}");
+        }
+
+        // também loga no error_log para confirmar execução
+        error_log("DEBUG salvo em: " . $debugJson);
+    }
+
 
     // Retorna o caminho final
-    return;
+    return $caminhoFinal;
 }
 
 
