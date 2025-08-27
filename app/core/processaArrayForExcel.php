@@ -1,72 +1,68 @@
 <?php
 
 /**
- * Orquestra o processo de exportação de dados de arrays aninhados para um arquivo Excel (.xlsx).
- *
- * Esta função é o ponto de entrada principal. Ela mapeia as colunas, escreve os
- * dados na planilha de forma recursiva e salva o arquivo final no servidor.
- *
- * @param array $modelo_colunas  Array que define as colunas desejadas na planilha.
- * @param array $dados           Array de dados complexos/aninhados a serem exportados.
- * @param array $headers         Cabeçalhos das colunas disponíveis nos dados de origem.
- * @param object $spreadsheet    Instância do objeto PhpSpreadsheet.
- * @param object $sheet          Instância da aba da planilha (Worksheet).
- * @param object $modelo         Objeto contendo metadados, como o nome do modelo para a pasta de destino.
- * @throws \RuntimeException Se a pasta de destino não puder ser criada ou o arquivo não for salvo.
+ * Função principal que orquestra o processo de exportação dos dados para Excel.
+ * Ela:
+ *  - Define as colunas com base no modelo.
+ *  - Filtra os dados para evitar duplicações.
+ *  - Escreve os dados na planilha.
+ *  - Salva o arquivo em disco.
  */
 function processaArrayForExcel($modelo_colunas, $dados, $headers, $spreadsheet, $sheet, $modelo)
 {
-    // ---------- Mapeia colunas e define cabeçalhos ----------
-    $columnsUsed = [];
-    foreach ($modelo_colunas as $i => $mc) {
+    // ---------- Mapeia colunas do modelo para as colunas disponíveis nos headers ----------
+    $i = 1; // Contador de colunas
+    $columnsUsed = []; // Colunas que serão efetivamente usadas
+    foreach ($modelo_colunas as $mc) {
         $descricao_coluna = $mc['descricao_coluna'];
+        // Só usa a coluna se ela existir nos headers de origem
         if (in_array($descricao_coluna, $headers, true)) {
+            // Divide nomes hierárquicos (ex: cliente.nome -> ['cliente','nome'])
             $keys = array_filter(explode('.', $descricao_coluna), 'strlen');
             $columnsUsed[] = [
                 'header' => $descricao_coluna,
-                'keys'   => array_values($keys),
-                'col'    => $i + 1,
+                'keys'   => array_values($keys), // Caminho de chaves para acessar no array de dados
+                'col'    => $i, // Índice numérico da coluna
             ];
-            setCellValueByColumnAndRow($sheet, $i + 1, 1, $descricao_coluna);
+            // Escreve o cabeçalho na planilha
+            setCellValueByColumnAndRow($sheet, $i, 1, $descricao_coluna);
+            $i++;
         }
     }
 
+    // Caso nenhuma coluna seja compatível, encerra com erro
     if (!$columnsUsed) {
         if (ob_get_length()) ob_end_clean();
         header('Content-Type: text/plain; charset=UTF-8');
         exit("Nenhuma coluna do modelo corresponde aos headers do arquivo.");
     }
 
-    // ---------- Identificar as duas primeiras colunas do modelo ----------
+    // Pega a primeira coluna como chave para identificar duplicatas
     $colunaChave1 = $columnsUsed[0]['keys'] ?? null;
-    $colunaChave2 = $columnsUsed[1]['keys'] ?? null;
 
-    // ---------- Otimização: Processa em lotes e limpa memória ----------
-    $batchSize = 100;
-    $rowIndex = 2;
+    // ---------- Otimização: Processa grupos únicos para reduzir memória ----------
+    $batchSize = 100; // Tamanho do lote de limpeza de memória
+    $rowIndex = 2; // Começa a escrever na linha 2 (linha 1 é cabeçalho)
     $processedCount = 0;
-
     $gruposUnicos = [];
-    foreach ($dados as $row) {
-        // Extrai os valores das duas primeiras colunas
-        $valor1 = $colunaChave1 ? getNestedValue($row, $colunaChave1) : '';
-        $valor2 = $colunaChave2 ? getNestedValue($row, $colunaChave2) : '';
-        $chaveGrupo = (string)$valor1 . '|' . (string)$valor2;
 
+    // Agrupa dados únicos pela primeira coluna
+    foreach ($dados as $row) {
+        $valor1 = $colunaChave1 ? getNestedValue($row, $colunaChave1) : '';
+        $chaveGrupo = is_array($valor1) ? implode(',', $valor1) : (string)$valor1;
         if (!isset($gruposUnicos[$chaveGrupo])) {
             $gruposUnicos[$chaveGrupo] = $row;
         }
-
         $processedCount++;
         if ($processedCount % 1000 === 0) {
-            gc_collect_cycles();
+            gc_collect_cycles(); // Limpa memória a cada 1000 registros
         }
     }
 
-    // Processa os grupos únicos
+    // ---------- Escreve os grupos únicos na planilha ----------
     $processedCount = 0;
     foreach ($gruposUnicos as $row) {
-        $rowIndex = writeRowRecursiveOptimized($sheet, $row, $columnsUsed, $rowIndex);
+        $rowIndex = writeRowRecursive($sheet, $row, $columnsUsed, $rowIndex);
         $processedCount++;
         if ($processedCount % $batchSize === 0) {
             $spreadsheet->garbageCollect();
@@ -74,7 +70,7 @@ function processaArrayForExcel($modelo_colunas, $dados, $headers, $spreadsheet, 
         }
     }
 
-    // ---------- Salvar arquivo ----------
+    // ---------- Salva arquivo ----------
     $destinoDir = __DIR__ . "/../../assets/convertidos/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/";
     if (!is_dir($destinoDir) && !mkdir($destinoDir, 0755, true)) {
         throw new \RuntimeException("Não foi possível criar pasta de destino: {$destinoDir}");
@@ -97,23 +93,14 @@ function processaArrayForExcel($modelo_colunas, $dados, $headers, $spreadsheet, 
 }
 
 /**
- * Escreve dados recursivamente na planilha, lidando com arrays aninhados e listas.
- *
- * Esta é a função central que "achata" a estrutura de dados complexa. Ela se chama
- * recursivamente para processar objetos aninhados e usa o produto cartesiano para
- * desdobrar listas em múltiplas linhas.
- *
- * @param object $sheet        A aba da planilha.
- * @param array $data          O array de dados no nível de recursão atual.
- * @param array $columnsUsed   Array de colunas que serão escritas.
- * @param int $rowIndex        O índice da linha atual na planilha (1-based).
- * @param array $prefix        O caminho de chaves para o nível atual (e.g., ['cliente', 'endereco']).
- * @param array $fixedValues   Valores de colunas do nível superior que devem ser mantidos nas linhas filhas.
- * @return int O novo índice da linha após a escrita.
+ * Escreve dados recursivamente, lidando com arrays aninhados e listas.
+ * - "Achata" estruturas complexas.
+ * - Usa produto cartesiano para listas.
+ * - Evita linhas duplicadas.
  */
-function writeRowRecursiveOptimized($sheet, $data, $columnsUsed, $rowIndex, $prefix = [], $fixedValues = [])
+function writeRowRecursive($sheet, $data, $columnsUsed, $rowIndex, $prefix = [], $fixedValues = [], &$lastRowValues = [])
 {
-    // Mesma implementação atual de writeRowRecursive
+    // Preenche valores escalares do nível atual
     foreach ($columnsUsed as $c) {
         if (
             count($c['keys']) === count($prefix) + 1 &&
@@ -127,64 +114,107 @@ function writeRowRecursiveOptimized($sheet, $data, $columnsUsed, $rowIndex, $pre
         }
     }
 
+    // Separa listas e objetos aninhados
     $listas = [];
     $objetos = [];
+    // $keysQuebram = ['image', 'foto', 'feature']; // personalize
+
+    $debug = false;
+
+
     foreach ($data as $k => $v) {
-        if (is_array($v) && array_keys($v) === range(0, count($v) - 1)) {
+
+        if ($k == 'Condominios') {
+            $debug = true;
+            // var_dump(array_keys($v));
+            // die;
+        }
+
+        if (is_array($v) && (array_keys($v) === range(0, count($v) - 1))) {
             $listas[$k] = $v;
         } elseif (is_array($v)) {
+            // var_dump($v);
+            // die;
             $objetos[$k] = $v;
         }
     }
 
+    // if ($debug) {
+    //     var_dump($listas, $objetos);
+    //     die;
+    // }
+
+    // Processa listas com produto cartesiano
     if ($listas) {
         $combos = cartesianProduct($listas);
         foreach ($combos as $combo) {
+
             $rowVals = $fixedValues;
             $filhoEscreveu = false;
 
             foreach ($combo as $chaveLista => $valorLista) {
+                // if (strtolower($chaveLista) == 'foto') {
+                //     echo 'listas';
+                //     var_dump($chaveLista, $valorLista, $listas);
+                //     die;
+                // }
                 if (is_scalar($valorLista) || $valorLista === null) {
+
                     $col = findColumnIndex($columnsUsed, array_merge($prefix, [$chaveLista]));
                     if ($col) {
                         $rowVals[$col] = safeToString($valorLista);
                     }
                 } else {
+
+                    // Valor é objeto aninhado, processa recursivamente
                     $antes = $rowIndex;
-                    $rowIndex = writeRowRecursiveOptimized(
+                    $rowIndex = writeRowRecursive(
                         $sheet,
                         $valorLista,
                         $columnsUsed,
                         $rowIndex,
                         array_merge($prefix, [$chaveLista]),
-                        $rowVals
+                        $rowVals,
+                        $lastRowValues
                     );
                     if ($rowIndex > $antes) $filhoEscreveu = true;
                 }
             }
 
-            if ($filhoEscreveu) {
-                continue;
-            }
+            if ($filhoEscreveu) continue;
 
-            foreach ($rowVals as $col => $valor) {
-                setCellValueByColumnAndRow($sheet, $col, $rowIndex, $valor);
+            // Evita duplicação
+            if ($rowVals !== $lastRowValues) {
+                foreach ($rowVals as $col => $valor) {
+                    setCellValueByColumnAndRow($sheet, $col, $rowIndex, $valor);
+                }
+                $lastRowValues = $rowVals;
+                $rowIndex++;
             }
-            $rowIndex++;
         }
         return $rowIndex;
     }
 
+    // Processa objetos associativos
     if ($objetos) {
         $antes = $rowIndex;
+
         foreach ($objetos as $chObj => $objVal) {
-            $rowIndex = writeRowRecursiveOptimized(
+
+            // if (strtolower($chObj) == 'foto') {
+            //     echo 'objetos';
+            //     var_dump($chObj, $objVal, $objetos);
+            //     die;
+            // }
+
+            $rowIndex = writeRowRecursive(
                 $sheet,
                 $objVal,
                 $columnsUsed,
                 $rowIndex,
                 array_merge($prefix, [$chObj]),
-                $fixedValues
+                $fixedValues,
+                $lastRowValues
             );
         }
         if ($rowIndex > $antes) {
@@ -194,31 +224,30 @@ function writeRowRecursiveOptimized($sheet, $data, $columnsUsed, $rowIndex, $pre
         foreach ($objetos as $chObj => $objVal) {
             fillScalarValues($objVal, $columnsUsed, array_merge($prefix, [$chObj]), $rowVals);
         }
-        foreach ($rowVals as $col => $valor) {
-            setCellValueByColumnAndRow($sheet, $col, $rowIndex, $valor);
+        if ($rowVals !== $lastRowValues) {
+            foreach ($rowVals as $col => $valor) {
+                setCellValueByColumnAndRow($sheet, $col, $rowIndex, $valor);
+            }
+            $lastRowValues = $rowVals;
+            $rowIndex++;
         }
-        $rowIndex++;
         return $rowIndex;
     }
 
-    foreach ($fixedValues as $col => $valor) {
-        setCellValueByColumnAndRow($sheet, $col, $rowIndex, $valor);
+    // Caso final: linha simples, sem listas nem objetos
+    if ($fixedValues !== $lastRowValues) {
+        foreach ($fixedValues as $col => $valor) {
+            setCellValueByColumnAndRow($sheet, $col, $rowIndex, $valor);
+        }
+        $lastRowValues = $fixedValues;
+        $rowIndex++;
     }
-    $rowIndex++;
+
     return $rowIndex;
 }
 
-
-
 /**
- * Agrega valores escalares mapeáveis de toda a subárvore em $fixedValues,
- * sem escrever linhas. É usada para coletar todos os valores simples de um objeto
- * aninhado que não possui listas.
- *
- * @param array $data           O array de dados para buscar valores.
- * @param array $columnsUsed    Array de colunas que serão escritas.
- * @param array $prefix         O caminho de chaves para o nível atual.
- * @param array $fixedValues    Array de referência para onde os valores serão adicionados.
+ * Preenche valores escalares de toda a subárvore (sem listas) em $fixedValues.
  */
 function fillScalarValues($data, $columnsUsed, $prefix, &$fixedValues)
 {
@@ -233,7 +262,8 @@ function fillScalarValues($data, $columnsUsed, $prefix, &$fixedValues)
             }
         }
     }
-    // Chama-se recursivamente para processar objetos aninhados dentro do nível atual.
+
+    // Recursão para objetos aninhados
     foreach ($data as $k => $v) {
         if (is_array($v) && array_keys($v) !== range(0, count($v) - 1)) {
             fillScalarValues($v, $columnsUsed, array_merge($prefix, [$k]), $fixedValues);
@@ -241,15 +271,8 @@ function fillScalarValues($data, $columnsUsed, $prefix, &$fixedValues)
     }
 }
 
-
 /**
- * Gera o produto cartesiano de um array de listas.
- *
- * O produto cartesiano é a base para desdobrar listas aninhadas em múltiplas linhas,
- * criando uma nova linha para cada combinação de valores.
- *
- * @param array $listas Array de listas. Ex: `[['a','b'], [1,2]]`
- * @return array Um array de combinações. Ex: `[['a',1], ['a',2], ['b',1], ['b',2]]`
+ * Retorna todas as combinações possíveis (produto cartesiano) das listas.
  */
 function cartesianProduct(array $listas): array
 {
@@ -258,7 +281,6 @@ function cartesianProduct(array $listas): array
         $tmp = [];
         foreach ($result as $res) {
             foreach ($valores as $val) {
-                // Combina cada valor da lista atual com cada resultado anterior.
                 $tmp[] = $res + [$chave => $val];
             }
         }
@@ -267,13 +289,8 @@ function cartesianProduct(array $listas): array
     return $result;
 }
 
-
 /**
- * Descobre o índice de uma coluna (1-based) baseado em um array de chaves.
- *
- * @param array $columnsUsed Array das colunas mapeadas.
- * @param array $keys        Array de chaves (e.g., ['cliente', 'nome']).
- * @return int|null O índice da coluna (1-based) ou null se não for encontrada.
+ * Busca o índice de coluna no mapeamento baseado nas chaves.
  */
 function findColumnIndex($columnsUsed, $keys)
 {
@@ -286,16 +303,7 @@ function findColumnIndex($columnsUsed, $keys)
 }
 
 /**
- * Escreve um valor em uma célula da planilha usando coordenadas numéricas.
- *
- * Esta função é um "wrapper" para a biblioteca PhpSpreadsheet, simplificando a
- * escrita de valores usando índices 1-based para coluna e linha.
- *
- * @param object $sheet     A aba da planilha.
- * @param int $colIndex     Índice da coluna (1-based).
- * @param int $rowIndex     Índice da linha (1-based).
- * @param mixed $value      O valor a ser escrito na célula.
- * @throws \InvalidArgumentException Se o índice da linha ou coluna for inválido.
+ * Wrapper para setar valores em células com índice numérico (coluna/linha).
  */
 function setCellValueByColumnAndRow($sheet, $colIndex, $rowIndex, $value)
 {
@@ -305,18 +313,12 @@ function setCellValueByColumnAndRow($sheet, $colIndex, $rowIndex, $value)
     if ($colIndex < 1) {
         throw new \InvalidArgumentException("Column index inválido: $colIndex");
     }
-    // Converte o índice da coluna para a letra correspondente (e.g., 1 -> 'A').
     $cell = columnLetter($colIndex) . $rowIndex;
     $sheet->setCellValue($cell, $value);
 }
 
 /**
- * Converte um índice de coluna numérico (1-based) para a letra de coluna do Excel.
- *
- * Ex: 1 -> 'A', 26 -> 'Z', 27 -> 'AA'.
- *
- * @param int $colIndex O índice da coluna (1-based).
- * @return string A letra da coluna.
+ * Converte índice numérico de coluna para letra do Excel (ex: 1 -> A, 27 -> AA).
  */
 function columnLetter($colIndex)
 {
@@ -330,13 +332,7 @@ function columnLetter($colIndex)
 }
 
 /**
- * Converte qualquer valor para uma string segura para escrita.
- *
- * Garante que o valor seja uma string e que esteja em formato UTF-8, evitando
- * erros de codificação na planilha. Arrays e objetos são convertidos para JSON.
- *
- * @param mixed $v O valor a ser convertido.
- * @return string O valor convertido para string segura.
+ * Converte qualquer valor em string segura (UTF-8).
  */
 function safeToString($v): string
 {
@@ -346,22 +342,43 @@ function safeToString($v): string
         return mb_check_encoding($v, 'UTF-8') ? $v : mb_convert_encoding($v, 'UTF-8', 'auto');
     }
     if (is_array($v) || is_object($v)) {
-        // Converte arrays/objetos para uma string JSON.
         $json = json_encode($v, JSON_UNESCAPED_UNICODE);
         return mb_check_encoding($json, 'UTF-8') ? $json : mb_convert_encoding($json, 'UTF-8', 'auto');
     }
     return '';
 }
 
-function getNestedValue(array $data, array $keys)
+/**
+ * Busca valor aninhado em arrays usando caminho de chaves.
+ */
+function getNestedValue($row, $keys)
 {
-    $value = $data;
+    $current = $row;
     foreach ($keys as $key) {
-        if (is_array($value) && array_key_exists($key, $value)) {
-            $value = $value[$key];
-        } else {
+        if (is_array($current)) {
+            // Caso de array sequencial (lista)
+            if (array_keys($current) === range(0, count($current) - 1)) {
+                $temp = [];
+                foreach ($current as $item) {
+                    $val = getNestedValue($item, [$key]);
+                    if ($val !== null) {
+                        $temp[] = $val;
+                    }
+                }
+                if (!empty($temp)) {
+                    $current = count($temp) === 1 ? $temp[0] : $temp;
+                    continue;
+                }
+                return null;
+            }
+            // Caso de array associativo
+            if (array_key_exists($key, $current)) {
+                $current = $current[$key];
+                continue;
+            }
             return null;
         }
+        return null;
     }
-    return $value;
+    return $current;
 }
