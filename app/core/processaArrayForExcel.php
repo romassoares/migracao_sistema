@@ -1,5 +1,5 @@
 <?php
-
+$layout_colunas_depara = [];
 /**
  * Função principal que orquestra o processo de exportação dos dados para Excel.
  * Ela:
@@ -62,6 +62,7 @@ function processaArrayForExcel($modelo_colunas, $dados, $headers, $spreadsheet, 
     // ---------- Escreve os grupos únicos na planilha ----------
     $processedCount = 0;
     foreach ($gruposUnicos as $row) {
+
         $rowIndex = writeRowRecursive($sheet, $row, $columnsUsed, $rowIndex);
         $processedCount++;
         if ($processedCount % $batchSize === 0) {
@@ -71,13 +72,28 @@ function processaArrayForExcel($modelo_colunas, $dados, $headers, $spreadsheet, 
     }
 
     // ---------- Salva arquivo ----------
+    salvaArquivosExcel($spreadsheet, $modelo);
+
+    return;
+}
+
+
+/**
+ * Salva a planilha em disco no formato XLSX.
+ */ function salvaArquivosExcel($spreadsheet, $modelo)
+{
+    global $layout_colunas_depara;
+
+    dd($layout_colunas_depara);
+    // Cria pasta de destino se não existir
     $destinoDir = __DIR__ . "/../../assets/convertidos/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/";
     if (!is_dir($destinoDir) && !mkdir($destinoDir, 0755, true)) {
         throw new \RuntimeException("Não foi possível criar pasta de destino: {$destinoDir}");
     }
-
+    // Gera nome do arquivo com timestamp
     $caminhoFinal = $destinoDir . "arquivos_" . date("Ymd_His") . ".xlsx";
 
+    // Salva arquivo com todos os registros
     $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
     $writer->setPreCalculateFormulas(false);
     $writer->save($caminhoFinal);
@@ -86,11 +102,28 @@ function processaArrayForExcel($modelo_colunas, $dados, $headers, $spreadsheet, 
         throw new \RuntimeException("Falha ao salvar arquivo: {$caminhoFinal}");
     }
 
+
+
+
+    // salva arquivo com as criticas
+
+
+
+
+
+
+    // salva arquivo com os erros
+
+
+
+
+
     unset($spreadsheet, $writer, $gruposUnicos);
     gc_collect_cycles();
 
-    return $caminhoFinal;
+    return;
 }
+
 
 /**
  * Escreve dados recursivamente, lidando com arrays aninhados e listas.
@@ -101,7 +134,10 @@ function processaArrayForExcel($modelo_colunas, $dados, $headers, $spreadsheet, 
 function writeRowRecursive($sheet, $data, $columnsUsed, $rowIndex, $prefix = [], $fixedValues = [], &$lastRowValues = [])
 {
     // Preenche valores escalares do nível atual
+
+    $total_colunas_por_linha = count($columnsUsed);
     foreach ($columnsUsed as $c) {
+
         if (
             count($c['keys']) === count($prefix) + 1 &&
             array_slice($c['keys'], 0, count($prefix)) === $prefix
@@ -124,17 +160,11 @@ function writeRowRecursive($sheet, $data, $columnsUsed, $rowIndex, $prefix = [],
 
     foreach ($data as $k => $v) {
 
-        if ($k == 'Condominios') {
-            $debug = true;
-            // var_dump(array_keys($v));
-            // die;
-        }
-
         if (is_array($v) && (array_keys($v) === range(0, count($v) - 1))) {
             $listas[$k] = $v;
         } elseif (is_array($v)) {
-            // var_dump($v);
-            // die;
+
+
             $objetos[$k] = $v;
         }
     }
@@ -153,7 +183,7 @@ function writeRowRecursive($sheet, $data, $columnsUsed, $rowIndex, $prefix = [],
             $filhoEscreveu = false;
 
             foreach ($combo as $chaveLista => $valorLista) {
-                // if (strtolower($chaveLista) == 'foto') {
+                // if (strtolower($chaveLista) == 'features') {
                 //     echo 'listas';
                 //     var_dump($chaveLista, $valorLista, $listas);
                 //     die;
@@ -184,7 +214,8 @@ function writeRowRecursive($sheet, $data, $columnsUsed, $rowIndex, $prefix = [],
             if ($filhoEscreveu) continue;
 
             // Evita duplicação
-            if ($rowVals !== $lastRowValues) {
+            if ($rowVals !== $lastRowValues && count($rowVals) == $total_colunas_por_linha) {
+
                 foreach ($rowVals as $col => $valor) {
                     setCellValueByColumnAndRow($sheet, $col, $rowIndex, $valor);
                 }
@@ -201,9 +232,9 @@ function writeRowRecursive($sheet, $data, $columnsUsed, $rowIndex, $prefix = [],
 
         foreach ($objetos as $chObj => $objVal) {
 
-            // if (strtolower($chObj) == 'foto') {
+            // if (strtolower($chObj) == 'features') {
             //     echo 'objetos';
-            //     var_dump($chObj, $objVal, $objetos);
+            //     var_dump($chObj, 'teste', $objVal, 'teste', $objetos);
             //     die;
             // }
 
@@ -224,7 +255,7 @@ function writeRowRecursive($sheet, $data, $columnsUsed, $rowIndex, $prefix = [],
         foreach ($objetos as $chObj => $objVal) {
             fillScalarValues($objVal, $columnsUsed, array_merge($prefix, [$chObj]), $rowVals);
         }
-        if ($rowVals !== $lastRowValues) {
+        if ($rowVals !== $lastRowValues  && count($rowVals) == $total_colunas_por_linha) {
             foreach ($rowVals as $col => $valor) {
                 setCellValueByColumnAndRow($sheet, $col, $rowIndex, $valor);
             }
@@ -234,8 +265,12 @@ function writeRowRecursive($sheet, $data, $columnsUsed, $rowIndex, $prefix = [],
         return $rowIndex;
     }
 
+    if (count($fixedValues)) {
+        // var_dump($fixedValues, $lastRowValues, $total_colunas_por_linha);
+        // die();
+    }
     // Caso final: linha simples, sem listas nem objetos
-    if ($fixedValues !== $lastRowValues) {
+    if ($fixedValues !== $lastRowValues && count($fixedValues) == $total_colunas_por_linha) {
         foreach ($fixedValues as $col => $valor) {
             setCellValueByColumnAndRow($sheet, $col, $rowIndex, $valor);
         }
@@ -307,6 +342,7 @@ function findColumnIndex($columnsUsed, $keys)
  */
 function setCellValueByColumnAndRow($sheet, $colIndex, $rowIndex, $value)
 {
+
     if ($rowIndex < 1) {
         throw new \InvalidArgumentException("Row index inválido: $rowIndex");
     }
@@ -314,7 +350,17 @@ function setCellValueByColumnAndRow($sheet, $colIndex, $rowIndex, $value)
         throw new \InvalidArgumentException("Column index inválido: $colIndex");
     }
     $cell = columnLetter($colIndex) . $rowIndex;
+
+    // if ($rowIndex != 1) {
+    //     var_dump('antes do inserir no cell');
+    // }
+
     $sheet->setCellValue($cell, $value);
+
+    // if ($rowIndex != 1) {
+    //     var_dump($sheet->getCell($cell)->getValue());
+    //     die;
+    // }
 }
 
 /**

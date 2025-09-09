@@ -5,21 +5,18 @@ date_default_timezone_set('America/Sao_Paulo');
 
 function dd(...$array)
 {
-    echo '<pre style="background-color: #2c2c2c; color: #ccff33; font-size: 16px; padding: 2px; word-wrap: break-word; white-space: pre-wrap; width: auto;">';
+
     foreach ($array as $value) {
-        var_dump($value);
+        print_r($value);
     }
-    echo '</pre>';
     die();
 }
 
 function notdie(...$array)
 {
-    echo '<pre style="background-color: #2c2c2c; color: #ccff33; font-size: 16px; padding: 2px; word-wrap: break-word; white-space: pre-wrap; width: auto;">';
     foreach ($array as $key => $value) {
-        var_dump($value);
+        print_r($value);
     }
-    echo '</pre>';
 }
 
 function decryptData($encryptedData, $password)

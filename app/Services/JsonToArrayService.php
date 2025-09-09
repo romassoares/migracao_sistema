@@ -6,11 +6,26 @@ class JsonToArrayService
 {
     public function convert($arquivo)
     {
+
         $handle = fopen($arquivo, "r");
-        $conteudo = fgets($handle);
+
+        if (!$handle) {
+            die("Erro ao abrir o arquivo: $arquivo");
+        }
+
+        // lê o arquivo inteiro de uma vez
+        $conteudo = fread($handle, filesize($arquivo));
         fclose($handle);
 
-        $conteudo = json_decode($conteudo);
+        // decodifica o JSON
+        $dados = json_decode($conteudo, true); // true para retornar array associativo
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            die("Erro ao decodificar JSON: " . json_last_error_msg());
+        }
+
+        $conteudo = $dados;
+
         if (!$conteudo || !is_array($conteudo)) {
             return [];
         }

@@ -2,6 +2,8 @@
 include_once __DIR__ . '/../core/functions.php';
 class XmlToArrayService
 {
+    private $debug = false;
+
     public function convert($filePath)
     {
         $xml = simplexml_load_file($filePath);
@@ -14,6 +16,8 @@ class XmlToArrayService
         }
         $caminhos_absolutos = [];
         $this->monta_caminhos_absolutos_arquivo($children, $caminhos_absolutos);
+        // var_dump($children);
+        // die;
         $retorno = array_unique($caminhos_absolutos);
 
         return [$retorno, $children];
@@ -30,6 +34,7 @@ class XmlToArrayService
 
             if ($child->count() > 0) {
                 $childRecord = [];
+
                 $this->trata_objeto($child, $childRecord);
 
                 if (!empty($attributes)) {
@@ -45,11 +50,28 @@ class XmlToArrayService
                     $record[$prop] = $childRecord;
                 }
             } else {
+                // $value = (string) $child;
+
+                // if (!empty($attributes)) {
+                //     $record[$prop] = ['@attributes' => $attributes, '@value' => $value];
+                // } else {
+                //     $record[$prop] = $value;
+                // }
                 $value = (string) $child;
                 if (!empty($attributes)) {
-                    $record[$prop] = ['@attributes' => $attributes, '@value' => $value];
+                    $entry = ['@attributes' => $attributes, '@value' => $value];
                 } else {
-                    $record[$prop] = $value;
+                    $entry = $value;
+                }
+
+                if (isset($record[$prop])) {
+                    // Se já existe, transforma em array caso ainda não seja
+                    if (!is_array($record[$prop]) || !isset($record[$prop][0])) {
+                        $record[$prop] = [$record[$prop]];
+                    }
+                    $record[$prop][] = $entry;
+                } else {
+                    $record[$prop] = $entry;
                 }
             }
         }

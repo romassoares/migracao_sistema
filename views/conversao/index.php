@@ -55,12 +55,12 @@
                             </div>
                         <?php } ?>
                     </form>
-                    <?php if (!empty($modelo->id_modelo)) { ?>
-                        <div class="col mt-2">
-                            <button type="button" onclick="processaArquivo()" class="btn btn-primary d-flex'">Processa arquivo</button>
-                        </div>
-                    <?php } ?>
                 </div>
+
+                <div class="col mt-2">
+                    <button type="button" onclick="processaArquivo()" class="btn btn-primary  btn-sm <?php echo !empty($modelo->id_modelo) ? "d-flex" : "d-none" ?>">Processa arquivo</button>
+                </div>
+
             </div>
         </div>
     </div>

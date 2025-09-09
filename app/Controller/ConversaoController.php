@@ -45,6 +45,8 @@ function uploadArquivo()
     $id_modelo = $_POST['modelo_id'];
     $file = $_FILES;
 
+
+
     if (isset($file['arquivo'])) {
 
         $sql = "SELECT *, l.nome FROM modelos AS m
@@ -195,6 +197,8 @@ function EditVinculacaoArquivo($data)
     $id_concorrente = $data['id_concorrente'];
     $id_tipo_arquivo = $data['id_tipo_arquivo'];
 
+
+
     $sql = "SELECT * FROM modelos m
     LEFT JOIN arquivos a ON m.id_modelo = a.id_modelo
     LEFT JOIN tipos_arquivos as t ON m.id_tipo_arquivo = t.id_tipo_arquivo
@@ -223,6 +227,10 @@ function EditVinculacaoArquivo($data)
     $modelos_colunas = metodo_all($sql_modelos_colunas, 'migracao');
 
     $tmpFile = __DIR__ . '/../../assets/' . $_SESSION['company']['nome'] . '/' . $resultado->nome_modelo . '/' . $resultado->id_modelo . '/' . $resultado->nome_arquivo;
+
+    // var_dump($resultado->nome_arquivo);
+    // var_dump(scandir(__DIR__ . '/../../assets/' . $_SESSION['company']['nome'] . '/' . $resultado->nome_modelo . '/' . $resultado->id_modelo . '/'));
+    // die;
 
     $extension_file = pathinfo($resultado->nome_arquivo, PATHINFO_EXTENSION);
 

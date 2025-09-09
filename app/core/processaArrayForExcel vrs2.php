@@ -71,9 +71,11 @@ function processaArrayForExcel($modelo_colunas, $dados, $headers, $spreadsheet, 
         }
     }
 
+
     // Processa os grupos únicos
     $processedCount = 0;
     foreach ($gruposUnicos as $row) {
+
         $rowIndex = writeRowRecursive($sheet, $row, $columnsUsed, $rowIndex);
         $processedCount++;
         if ($processedCount % $batchSize === 0) {

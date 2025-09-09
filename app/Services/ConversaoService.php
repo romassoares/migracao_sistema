@@ -7,13 +7,13 @@ include_once __DIR__ . '/CsvToArrayService.php';
 include_once __DIR__ . '/SqlToArrayService.php';
 include_once __DIR__ . '/JsonToArrayService.php';
 
-
 class ConvertService
 {
 
     private $conversor_class;
     public function converter($tmpFile, $extension_file, $descr_tipo_arquivo)
     {
+
         if ($descr_tipo_arquivo == $extension_file) {
 
             if ($extension_file == 'xml')

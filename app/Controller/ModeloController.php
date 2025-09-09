@@ -9,6 +9,8 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 $db = new DB();
 
+
+
 function index()
 {
     $sql = 'SELECT 
@@ -163,141 +165,13 @@ function lerArquivoCsv($colunas, $arquivos, $modelo)
     return $dados;
 }
 
-// function processaArquivo($data)
-// {
-//     if (ob_get_length()) ob_end_clean();
-
-//     $sql = "SELECT *, l.nome 
-//             FROM modelos AS m
-//             LEFT JOIN tipos_arquivos AS t ON m.id_tipo_arquivo = t.id_tipo_arquivo
-//             LEFT JOIN layout AS l ON m.id_layout = l.id
-//             LEFT JOIN concorrentes AS c ON m.id_concorrente = c.id
-//             WHERE id_modelo = " . intval($data['id_modelo']);
-//     $modelo = metodo_get($sql, 'migracao');
-
-//     $modelo_colunas = metodo_all("SELECT * FROM modelos_colunas 
-//                                   WHERE id_modelo = {$data['id_modelo']} 
-//                                   ORDER BY posicao_coluna", 'migracao');
-
-//     $arquivo = metodo_get("SELECT * FROM arquivos 
-//                             WHERE id_modelo = {$modelo->id_modelo} 
-//                               AND id_cliente = {$modelo->id_concorrente} 
-//                             LIMIT 1", 'migracao');
-
-//     $arq_cli = "./assets/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/{$modelo->id_modelo}/{$arquivo->nome_arquivo}";
-//     if (!file_exists($arq_cli)) die('Arquivo não encontrado.');
-
-//     $extension_file = pathinfo($arquivo->nome_arquivo, PATHINFO_EXTENSION);
-
-//     $convert   = new ConvertService();
-//     $converted = $convert->converter($arq_cli, $extension_file, $modelo->descr_tipo_arquivo);
-
-//     $headers = $converted[0] ?? [];
-//     $dados   = $converted[1] ?? [];
-
-//     $spreadsheet = new Spreadsheet();
-//     $sheet = $spreadsheet->getActiveSheet();
-
-//     // ---------- Mapeia colunas ----------
-//     $columnsUsed = [];
-//     $colNumber = 1;
-//     foreach ($modelo_colunas as $mc) {
-//         $descricao_coluna = $mc['descricao_coluna'];
-//         if (in_array($descricao_coluna, $headers, true)) {
-//             $keys = array_values(array_filter(explode('.', $descricao_coluna), 'strlen'));
-//             $columnsUsed[] = [
-//                 'header' => $descricao_coluna,
-//                 'keys'   => $keys,
-//                 'col'    => $colNumber
-//             ];
-//             setCellValueByColumnAndRow($sheet, $colNumber, 1, $descricao_coluna);
-//             $colNumber++;
-//         }
-//     }
-
-//     if (empty($columnsUsed)) {
-//         if (ob_get_length()) ob_end_clean();
-//         header('Content-Type: text/plain; charset=UTF-8');
-//         echo "Nenhuma coluna do modelo corresponde aos headers do arquivo.";
-//         exit;
-//     }
-
-//     // ---------- Write data ----------
-//     $rowIndex = 2;
-
-//     foreach ($dados as $row) {
-//         $scalarValues = [];
-//         $listValues = [];
-//         $maxRows = 1;
-
-//         // 1) Collect values and separate lists from scalars
-//         foreach ($columnsUsed as $c) {
-//             $vals = getNestedValues($row, $c['keys']);
-
-//             if (empty($vals)) {
-//                 $vals = [""];
-//             }
-
-//             // A 'list' is a value that returns multiple results
-//             if (count($vals) > 1) {
-//                 $listValues[$c['col']] = $vals;
-//                 $maxRows = max($maxRows, count($vals));
-//             } else {
-//                 $scalarValues[$c['col']] = $vals[0];
-//             }
-//         }
-
-//         // If there are no list values, we will just write one row.
-//         if (empty($listValues)) {
-//             $maxRows = 1;
-//         }
-
-//         // 2) Iterate based on the longest list and write rows
-//         for ($i = 0; $i < $maxRows; $i++) {
-//             $rowToWrite = [];
-//             // Add scalar values (non-repeating)
-//             foreach ($scalarValues as $col => $value) {
-//                 $rowToWrite[$col] = $value;
-//             }
-//             // Add list values (one per iteration)
-//             foreach ($listValues as $col => $values) {
-//                 $rowToWrite[$col] = $values[$i] ?? ""; // Use empty string if index doesn't exist
-//             }
-
-//             // 3) Write to spreadsheet
-//             foreach ($columnsUsed as $c) {
-//                 $col = $c['col'];
-//                 $valor = $rowToWrite[$col] ?? "";
-
-//                 if (is_array($valor) || is_object($valor)) {
-//                     $valor = json_encode($valor, JSON_UNESCAPED_UNICODE);
-//                 } elseif (!is_string($valor)) {
-//                     $valor = (string)$valor;
-//                 }
-//                 if (!mb_check_encoding($valor, 'UTF-8')) {
-//                     $valor = mb_convert_encoding($valor, 'UTF-8', 'auto');
-//                 }
-//                 setCellValueByColumnAndRow($sheet, $col, $rowIndex + $i, $valor);
-//             }
-//         }
-
-//         $rowIndex += $maxRows;
-//     }
-
-//     if (ob_get_length()) ob_end_clean();
-//     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; charset=UTF-8');
-//     header('Content-Disposition: attachment;filename="arquivos.xlsx"');
-//     header('Cache-Control: max-age=0');
-//     $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-//     $writer->save('php://output');
-//     exit;
-// }
-
 /**
  * Processes a data file, converts it, and generates an Excel spreadsheet.
  */
 function processaArquivo($data)
 {
+    global $layout_colunas_depara;
+
     if (ob_get_length()) ob_end_clean();
 
     // Busca modelo
@@ -306,8 +180,17 @@ function processaArquivo($data)
             LEFT JOIN tipos_arquivos AS t ON m.id_tipo_arquivo = t.id_tipo_arquivo
             LEFT JOIN layout AS l ON m.id_layout = l.id
             LEFT JOIN concorrentes AS c ON m.id_concorrente = c.id
-            WHERE id_modelo = " . intval($data['id_modelo']);
+            WHERE id_modelo = " . intval($data['id_modelo']) . " and id_layout = " . intval($data['id_layout']) . " and id_concorrente = " . intval($data['id_concorrente']) . " and m.id_tipo_arquivo = " . intval($data['id_tipo_arquivo']);
+
     $modelo = metodo_get($sql, 'migracao');
+
+
+    $layout_colunas_depara = metodo_all("SELECT l_depara.conteudo_de,l_depara.Conteudo_para_livre,l_depara.substituir, l_col_conteu.conteudo AS conteudo_layout, l_col_conteu.descricao as descricao_coluna
+                                FROM layout_colunas AS l_col
+                                LEFT JOIN layout_coluna_conteudos AS l_col_conteu USING(id) 
+                                LEFT JOIN layout_coluna_depara AS l_depara ON l_col_conteu.id = l_depara.id_layout_coluna
+                                WHERE id_layout = $modelo->id_layout 
+                                ORDER BY posicao", 'migracao');
 
     $modelo_colunas = metodo_all("SELECT * FROM modelos_colunas 
                                   WHERE id_modelo = {$data['id_modelo']} 
@@ -336,7 +219,6 @@ function processaArquivo($data)
     // Processa o array para excel
     processaArrayForExcel($modelo_colunas, $dados, $headers, $spreadsheet, $sheet, $modelo);
 
-    // Retorna o caminho final
     return;
 }
 

@@ -4,6 +4,10 @@ var convertidosHeaders = []
 var layout_colunas = []
 var modelos_colunas = []
 
+var id_layout = ""
+var id_tipo_arquivo = ""
+
+
 $(document).ready(function () {
     $('#input_layout_coluna').select2({
         theme: "bootstrap-5",
@@ -32,10 +36,14 @@ $(document).ready(function () {
                 id_tipo_arquivo: modelo.id_tipo_arquivo
             })
 
+            id_layout = modelo.id_layout
+            id_tipo_arquivo = modelo.id_tipo_arquivo
+
             layout_colunas = Object.entries(resultado.data.layout_colunas)
             modelo = resultado.data.modelo
+
             convertidosHeaders = Object.values(resultado.data.arquivo_convertido[0])
-            if (modelo.descr_tipo_arquivo == "xml" || modelo.descr_tipo_arquivo == "json") {
+            if (modelo.descr_tipo_arquivo == "xml" || modelo.descr_tipo_arquivo == "json" || modelo.descr_tipo_arquivo == "xlsx") {
                 convertidos = Object.values(resultado.data.arquivo_convertido[1])
             } else {
                 convertidos = Object.values(resultado.data.arquivo_convertido)
@@ -57,12 +65,12 @@ $(document).ready(function () {
 
                     $(el_select).val(valor).trigger('change.select2');
 
-                    const optionToDisable = el_select.querySelector(`option[value="${valor}"]`);
-                    if (optionToDisable) {
-                        optionToDisable.disabled = true;
-                    }
-                    document.querySelector("#load").style.display = 'none'
+                    // const optionToDisable = el_select.querySelector(`option[value="${valor}"]`);
+                    // if (optionToDisable) {
+                    //     optionToDisable.disabled = true;
+                    // }
                     atualizaColunas()
+                    document.querySelector("#load").style.display = 'none'
 
                     el_select.onchange = oldOnChange;
                 });
@@ -440,7 +448,18 @@ const getValue = (row, header) => {
         return row.flatMap(r => getValue(r, parts));
     }
 
-    const next = row?.[first];
+    // Caso não seja objeto válido
+
+    if (typeof row !== 'object') {
+        return [];
+    }
+
+    const next = row[first];
+    if (next === undefined) {
+        return getValue(row, rest);
+    }
+
+    // const next = row?.[first];
     return getValue(next, rest);
 };
 
@@ -459,8 +478,9 @@ function atualizaColunas() {
         valoresSelecionados.forEach(valor => {
             if (currentSelect.value !== valor && valor !== '') {
                 const optionToDisable = Array.from(currentSelect.options).find(opt => opt.value === valor);
-                if (optionToDisable)
+                if (optionToDisable) {
                     optionToDisable.disabled = true;
+                }
             }
         });
 
@@ -545,12 +565,16 @@ async function processaArquivo() {
     document.querySelector("#load").style.display = 'block'
 
     var modelo_id = document.querySelector("#modelo_id").value
+    var id_concorrente = document.querySelector("#concorrente_id").value
 
     axios({
         method: 'post',
         url: '/modelo/processaArquivo',
         data: {
-            id_modelo: modelo_id // ou o que precisar passar
+            id_modelo: modelo_id,
+            id_concorrente: id_concorrente,
+            id_layout: id_layout,
+            id_tipo_arquivo: id_tipo_arquivo
         },
         // responseType: 'blob' // <- isso é essencial
     }).then(response => {
@@ -564,7 +588,6 @@ async function processaArquivo() {
     }).catch(error => {
         console.error('Erro ao gerar Excel:', error);
     });
-
 
     document.querySelector("#load").style.display = 'none'
 }
