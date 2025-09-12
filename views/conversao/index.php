@@ -57,10 +57,18 @@
                     </form>
                 </div>
 
-                <div class="col mt-2">
-                    <button type="button" onclick="processaArquivo()" class="btn btn-primary  btn-sm <?php echo !empty($modelo->id_modelo) ? "d-flex" : "d-none" ?>">Processa arquivo</button>
+                <div class="d-none" id="btn_processa_arquivo">
+                    <button type="button" onclick="processaArquivo()" class="btn btn-primary btn-sm d-flex">Processa arquivo</button>
                 </div>
 
+            </div>
+            <div class="d-none" id="div_btn_processados_arquivo">
+                <div class="col-6 d-flex flex-column gap-2">
+                    <p>Faça download dos arquivos processados:</p>
+                    <button class="btn btn-secondary btn-sm">Corretor</button>
+                    <button class="btn btn-secondary btn-sm">Criticados</button>
+                    <button class="btn btn-secondary btn-sm">Todos</button>
+                </div>
             </div>
         </div>
     </div>

@@ -45,8 +45,6 @@ function uploadArquivo()
     $id_modelo = $_POST['modelo_id'];
     $file = $_FILES;
 
-
-
     if (isset($file['arquivo'])) {
 
         $sql = "SELECT *, l.nome FROM modelos AS m
@@ -96,7 +94,7 @@ function uploadArquivo()
         // =================================================
         // =================================================
 
-        $qntItems = count($converted) - 1;
+        $qntItems = count($converted[1]);
 
         //definição do diretório base
         $dir_base = __DIR__ . '/../../assets/' . $_SESSION['company']['nome'] . '/' . $modelo->nome_modelo . '/' . $modelo->id_modelo . '/';

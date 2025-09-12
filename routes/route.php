@@ -35,13 +35,13 @@ switch ($uri) {
         break;
     // ==============================================
     case 'auth/login':
-        require __DIR__ . './../views/auth/login.php';
+        require __DIR__ . '/../views/auth/login.php';
         break;
     case 'auth/companys':
-        require __DIR__ . './../views/auth/selectCompany.php';
+        require __DIR__ . '/../views/auth/selectCompany.php';
         break;
     case 'auth/new_company':
-        require __DIR__ . './../views/auth/newCompany.php';
+        require __DIR__ . '/../views/auth/newCompany.php';
         break;
     case 'auth/trocar_senha':
         redirect('auth/trocarSenha');

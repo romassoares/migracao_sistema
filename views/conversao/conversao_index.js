@@ -21,12 +21,18 @@ $(document).ready(function () {
     });
 
     if (modelo.id_concorrente) {
+
+        document.querySelector("#btn_processa_arquivo").className = 'col mt-2'
         document.querySelector("#load").style.display = 'block'
         dispararEventoEmSelect(document.querySelector("#concorrente_id"), modelo.id_concorrente)
 
         setTimeout(() => {
             dispararEventoEmSelect(document.querySelector("#modelo_id"), modelo.id_modelo)
         }, 1000)
+
+        if (modelo.id_modelo !== '' && modelo.id_concorrente !== '') {
+            existeArquivoProcessado(modelo.id_modelo, modelo.id_concorrente)
+        }
 
         setTimeout(async () => {
             var resultado = await method_post('/conversao/EditVinculacaoArquivo', {
@@ -65,10 +71,10 @@ $(document).ready(function () {
 
                     $(el_select).val(valor).trigger('change.select2');
 
-                    // const optionToDisable = el_select.querySelector(`option[value="${valor}"]`);
-                    // if (optionToDisable) {
-                    //     optionToDisable.disabled = true;
-                    // }
+                    const optionToDisable = el_select.querySelector(`option[value="${valor}"]`);
+                    if (optionToDisable) {
+                        optionToDisable.disabled = true;
+                    }
                     atualizaColunas()
                     document.querySelector("#load").style.display = 'none'
 
@@ -78,6 +84,12 @@ $(document).ready(function () {
         }, 1000)
     }
 });
+
+function existeArquivoProcessado(id_modelo, id_concorrente) {
+    // console.log('arquivoProcessado ', id_modelo, id_concorrente)
+    let div_btn_processados_arquivo = document.querySelector("#div_btn_processados_arquivo")
+    div_btn_processados_arquivo.className = 'card col-md-6 col-sm-12 d-flex justify-content-center align-items-center p-2'
+}
 
 function dispararEventoEmSelect(el_select, value_id) {
     el_select.value = value_id;
@@ -560,6 +572,7 @@ async function removeColunaModelo(select, ol_value) {
     //         alert(resultado.data.msg)
     // }
 }
+
 
 async function processaArquivo() {
     document.querySelector("#load").style.display = 'block'
