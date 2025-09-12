@@ -31,4 +31,4 @@ $caminho_sistema = __DIR__ . '/../../';
 
 <body style="margin-left: 260px; padding: 1rem;">
 
-    <?php include_once __DIR__ . './menu_lateral.php' ?>
+    <?php include_once __DIR__ . '/menu_lateral.php' ?>

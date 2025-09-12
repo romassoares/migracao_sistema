@@ -1,5 +1,16 @@
 <?php include_once __DIR__ . '/../../includes/head.php' ?>
 
+<?php
+$tipos_colunas = [
+    'livre' => 'Livre',
+    'email' => 'Email',
+    'telefone' => 'Telefone',
+    'data' => 'Data',
+    'numerico' => 'Numérico',
+    'flag' => 'Flag',
+    'sim_nao' => 'Sim/Não'
+];
+?>
 <div class="card col-12">
     <div class="card-header">
         Atualização de Layouts
@@ -48,7 +59,7 @@
                             ondrop="drop_handler(event)"
                             ondragover="dragover_handler(event)">
                             <td><?php echo $colunas['nome_exibicao'] ?></td>
-                            <td><?php echo $colunas['tipo'] ?></td>
+                            <td><?php echo $tipos_colunas[$colunas['tipo']] ?? $colunas['tipo'] ?></td>
                             <td><?php echo ($colunas['obrigatorio'] == 1) ? 'Sim' : 'Não' ?></td>
                             <td id="col_posi"><?php echo $colunas['posicao'] ?></td>
                             <td>
@@ -108,22 +119,22 @@
                 <div class="d-flex justify-content-around align-items-center mt-3 gap-2">
                     <h6 for="tipo">Tipo</h6>
                     <select name="tipo" id="tipo" class="form-control form-control-sm">
-                        <option value="livre">Livre</option>
-                        <option value="email">Email</option>
-                        <option value="telefone">Telefone</option>
-                        <option value="data">Data</option>
-                        <option value="numerico">Numérico</option>
-                        <option value="flag">Flag</option>
+                        <?php foreach ($tipos_colunas as $valor => $nome) : ?>
+                            <option value="<?php echo $valor ?>"><?php echo $nome ?></option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="col-6 mt-3 d-flex gap-3">
-                    <div class="form-check  ">
-                        <input class="form-check-input" type="radio" id="obrigatorio_sim" name="obrigatorio" checked value="1">
-                        <label class="form-check-label" for="obrigatorio">sim</label>
-                    </div>
-                    <div class="form-check ">
-                        <input class="form-check-input" type="radio" id="obrigatorio_nao" name="obrigatorio" value="0">
-                        <label class="form-check-label" for="obrigatorio">não</label>
+                <div class="col-6 mt-3">
+                    <h6 for="obrigatorio">Obrigatório</h6>
+                    <div class="d-flex gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" id="obrigatorio_sim" name="obrigatorio" checked value="1">
+                            <label class="form-check-label" for="obrigatorio">Sim</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" id="obrigatorio_nao" name="obrigatorio" value="0">
+                            <label class="form-check-label" for="obrigatorio">Não</label>
+                        </div>
                     </div>
                 </div>
             </div>

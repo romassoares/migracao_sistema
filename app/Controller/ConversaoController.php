@@ -296,3 +296,161 @@ function convertidos()
         'function' => ''
     ];
 }
+
+function deparaIndex()
+{
+    $regras = [
+        'id_layout_coluna' => ['required' => true, 'type' => 'int'],
+        'id_modelo' => ['required' => true, 'type' => 'int'],
+        'success' => ['required' => false, 'type' => 'int']
+    ];
+    $request = validateRequest($_GET, $regras);
+
+    $id_layout_coluna = $request['dados']['id_layout_coluna'];
+    $id_modelo = $request['dados']['id_modelo'];
+    
+
+    // echo "<pre>";
+    // print_r($deparas);
+    // echo "</pre>";
+
+    $sql = "SELECT tipo FROM layout_colunas WHERE id = $id_layout_coluna";
+    $tipo = metodo_get($sql, "migracao");
+
+    $sql = "SELECT nome FROM concorrentes WHERE id = (SELECT id_concorrente FROM modelos WHERE id_modelo = $id_modelo)";
+    $concorrente = metodo_get($sql, "migracao");
+
+    $sql = "SELECT nome FROM layout WHERE id = (SELECT id_layout FROM layout_colunas WHERE id = $id_layout_coluna)";
+    $layout = metodo_get($sql, "migracao");
+
+    $sql = "SELECT id_modelo_coluna, descricao_coluna FROM modelos_colunas WHERE id_modelo = $id_modelo AND id_layout_coluna = $id_layout_coluna";
+    $coluna = metodo_get($sql, "migracao");
+
+    $sql = "SELECT * FROM layout_coluna_depara WHERE id_layout_coluna = $id_layout_coluna AND (id_modelo_coluna IS NULL OR id_modelo_coluna = " . $coluna->id_modelo_coluna . ")";
+    $deparas = metodo_all($sql, "migracao");
+
+    return [
+        'view' => 'conversao/depara',
+        'data' => [
+            'deparas' => $deparas,
+            'tipo' => $tipo->tipo,
+            'id_layout_coluna' => $id_layout_coluna, 
+            'id_modelo' => $id_modelo, 
+            'concorrente' => $concorrente->nome, 
+            'layout' => $layout->nome,
+            'descricao_coluna' => $coluna->descricao_coluna
+        ],
+        'function' => ''
+    ];
+}
+
+function deletarTodosDepara()
+{
+    $id_layout_coluna = isset($_GET['id_layout_coluna']) ? $_GET['id_layout_coluna'] : '';
+    $id_modelo = isset($_GET['id_modelo']) ? $_GET['id_modelo'] : '';
+    $id = isset($_GET['id']) ? $_GET['id'] : '';
+
+    if($id_layout_coluna && $id_modelo) {
+        $sql = "DELETE FROM layout_coluna_depara WHERE id_layout_coluna = ? AND (id_modelo_coluna IS NULL OR id_modelo_coluna = (SELECT id_modelo_coluna FROM modelos_colunas WHERE id_modelo = $id_modelo AND id_layout_coluna = $id_layout_coluna))";
+        insert_update($sql, "i", [$id_layout_coluna], 'migracao');        
+    } else if($id) {
+        $sql = 'DELETE FROM layout_coluna_depara WHERE id = ?';
+        insert_update($sql, "i", [$id], 'migracao');
+    }
+
+    return ['view' => '', 'data' => [], 'function' => "depara?id_layout_coluna=" . $id_layout_coluna . "&id_modelo=" . $id_modelo];
+}
+
+function deletarDepara()
+{
+    $id = isset($_GET["id"]) ? $_GET["id"] : "";
+
+    if (!$id) {
+        return_api(404, "ID não informado", []);
+        return;
+    }
+    
+    $sql = 'DELETE FROM layout_coluna_depara WHERE id = ?';
+    insert_update($sql, "i", [$id], 'migracao');
+
+    echo json_encode(['success' => true]);
+    exit();
+}
+
+function deparaSalvar()
+{
+    $regras = [
+        'id_layout_coluna' => ['required' => true, 'type' => 'int'],
+        'id_modelo' => ['required' => true, 'type' => 'int'],
+    ];
+    $request = validateRequest($_POST, $regras);
+
+    $id_layout_coluna = $request['dados']['id_layout_coluna'];
+    $id_modelo = $request['dados']['id_modelo'];
+
+    $sql = "SELECT id_modelo_coluna FROM modelos_colunas WHERE id_modelo = $id_modelo AND id_layout_coluna = $id_layout_coluna";
+    $modelo_coluna = metodo_get($sql, 'migracao');
+
+    // Atualiza os novos cards
+    if(isset($_POST['novo_card_ids']) && is_array($_POST['novo_card_ids']) && count($_POST['novo_card_ids']) > 0) {
+        foreach($_POST['novo_card_ids'] as $i) {
+
+            $de = isset($_POST["novo_depara_de_{$i}"]) ? $_POST["novo_depara_de_{$i}"] : '';
+            $para = isset($_POST["novo_depara_para_{$i}"]) ? $_POST["novo_depara_para_{$i}"] : '';
+            $substituir = isset($_POST["novo_substituir_{$i}"]) ? $_POST["novo_substituir_{$i}"] : '';
+            $qualquer_concorrente = isset($_POST["novo_qualquer_concorrente_{$i}"]) ? true : false;
+
+            if(!empty($de)) {
+                if($qualquer_concorrente) {
+                    $sql = "INSERT INTO layout_coluna_depara (id_layout_coluna, conteudo_de, Conteudo_para_livre, substituir) VALUES (?,?,?,?)";
+                    insert_update($sql, "isss", [
+                        $id_layout_coluna,
+                        $de,
+                        $para,
+                        $substituir ? '1' : '0'
+                    ], 'migracao');
+                } else {
+                    $sql = "INSERT INTO layout_coluna_depara (id_layout_coluna, id_modelo_coluna, conteudo_de, Conteudo_para_livre, substituir) VALUES (?,?,?,?,?)";
+                    insert_update($sql, "iisss", [
+                        $id_layout_coluna,
+                        $modelo_coluna->id_modelo_coluna,
+                        $de,
+                        $para,
+                        $substituir ? '1' : '0'
+                    ], 'migracao');
+                }
+            }
+        }
+    }
+
+    // Atualiza os cards existentes
+    foreach ($_POST as $key => $value) {
+        if (strpos($key, 'depara_de_') === 0) {
+            $id = str_replace('depara_de_', '', $key);
+            
+            $de = $value;
+            $para = isset($_POST["depara_para_{$id}"]) ? $_POST["depara_para_{$id}"] : '';
+            $substituir = isset($_POST["substituir_{$id}"]) ? 1 : 0;
+            $qualquer_concorrente = isset($_POST["qualquer_concorrente_{$id}"]) ? 1 : 0;
+            
+            if (!empty($de)) {
+                $sql = "UPDATE layout_coluna_depara 
+                        SET conteudo_de = ?, Conteudo_para_livre = ?, substituir = ?";
+                $sql .= $qualquer_concorrente == 1 ? ", id_modelo_coluna = NULL" : ", id_modelo_coluna = " . $modelo_coluna->id_modelo_coluna;
+                $sql .= " WHERE id = ?";
+                
+                insert_update($sql, "ssii", 
+                    [
+                        $de, 
+                        $para, 
+                        $substituir, 
+                        $id
+                    ], 
+                    'migracao'
+                );
+            }
+        }
+    }
+
+    return ['view' => '', 'data' => [], 'function' => "index?id_modelo=" . $id_modelo];
+}

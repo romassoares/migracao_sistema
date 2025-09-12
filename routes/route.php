@@ -98,7 +98,18 @@ switch ($uri) {
         require __DIR__ . '/../app/Controller/ConversaoController.php';
         uploadArquivo();
         break;
-
+    case 'conversao/depara':
+        redirect('conversao/deparaIndex');
+        break;
+    case 'conversao/deparaSalvar':
+        redirect('conversao/deparaSalvar');
+        break;
+    case 'conversao/deletarTodosDepara':
+        redirect('conversao/deletarTodosDepara');
+        break;
+    case 'conversao/deletarDepara':
+        redirect('conversao/deletarDepara');
+        break;
     // ==============================================
     case 'modelo/index':
         redirect('modelo/index');

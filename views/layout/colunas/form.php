@@ -34,6 +34,8 @@
                                 <option <?php echo strtolower($layout_coluna->tipo) == 'numerico' ? "selected" : '' ?> value="numerico">Numérico</option>
 
                                 <option <?php echo strtolower($layout_coluna->tipo) == 'flag' ? "selected" : '' ?> value="flag">Flag</option>
+
+                                <option <?php echo strtolower($layout_coluna->tipo) == 'sim_nao' ? "selected" : '' ?> value="sim_nao">Sim/Não</option>
                             </select>
                         </div>
                         <div class="col d-flex align-items-center flex-column justify-content-center">

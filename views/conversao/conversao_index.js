@@ -347,10 +347,13 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
             }
 
             const div_input_grupo_append = document.createElement("div")
-            div_input_grupo_append.className = "input-group-append"
+            div_input_grupo_append.className = "input-group-append d-flex"
 
             const span_input_grupo_append = document.createElement("span")
             span_input_grupo_append.className = "input-group-text"
+            span_input_grupo_append.style.borderRadius = "0"
+            span_input_grupo_append.style.cursor = "pointer"
+            span_input_grupo_append.title = "Limpar"
             span_input_grupo_append.innerHTML = "<i class='bi bi-eraser'></i>"
             span_input_grupo_append.onclick = function () {
                 const ol_value = select_layout_coluna.value
@@ -363,6 +366,18 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
                 select_layout_coluna.onchange = oldOnChange;
             }
             div_input_grupo_append.appendChild(span_input_grupo_append)
+            
+            const span_botao_depara = document.createElement("span")
+            span_botao_depara.className = "input-group-text"
+            span_botao_depara.style.borderRadius = "0 4px 4px 0"
+            span_botao_depara.style.cursor = "pointer"
+            span_botao_depara.title = "Configurar De/Para"
+            span_botao_depara.innerHTML = "<i class='bi bi-journals'></i>"
+            span_botao_depara.onclick = function () {
+                window.location.href = '/conversao/depara?id_layout_coluna=' + select_layout_coluna.value + '&id_modelo=' + modelo.id_modelo;
+            }
+
+            div_input_grupo_append.appendChild(span_botao_depara);
             div_input_grupo.appendChild(select_layout_coluna)
             div_input_grupo.appendChild(div_input_grupo_append)
             div_col.appendChild(div_input_grupo)
