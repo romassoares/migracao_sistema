@@ -84,7 +84,7 @@ function processaArrayForExcel($modelo_colunas, $dados, $headers, $spreadsheet, 
 {
     global $layout_colunas_depara;
 
-    dd($layout_colunas_depara);
+    // dd($layout_colunas_depara);
     // Cria pasta de destino se não existir
     $destinoDir = __DIR__ . "/../../assets/convertidos/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/";
     if (!is_dir($destinoDir) && !mkdir($destinoDir, 0755, true)) {

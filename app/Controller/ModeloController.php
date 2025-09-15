@@ -206,6 +206,10 @@ function processaArquivo($data)
 
     $extension_file = pathinfo($arquivo->nome_arquivo, PATHINFO_EXTENSION);
 
+
+    $sql = "UPDATE arquivos SET status = ? WHERE id_cliente = ? and id_modelo = ?";
+    insert_update($sql, "sii", ['P', $arquivo->id_cliente, $arquivo->id_modelo], 'migracao');
+
     // Converte
     $convert   = new ConvertService();
     $converted = $convert->converter($arq_cli, $extension_file, $modelo->descr_tipo_arquivo);
@@ -218,6 +222,8 @@ function processaArquivo($data)
 
     // Processa o array para excel
     processaArrayForExcel($modelo_colunas, $dados, $headers, $spreadsheet, $sheet, $modelo);
+
+
 
     return;
 }

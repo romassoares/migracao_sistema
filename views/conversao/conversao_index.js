@@ -30,9 +30,7 @@ $(document).ready(function () {
             dispararEventoEmSelect(document.querySelector("#modelo_id"), modelo.id_modelo)
         }, 1000)
 
-        if (modelo.id_modelo !== '' && modelo.id_concorrente !== '') {
-            existeArquivoProcessado(modelo.id_modelo, modelo.id_concorrente)
-        }
+
 
         setTimeout(async () => {
             var resultado = await method_post('/conversao/EditVinculacaoArquivo', {
@@ -42,11 +40,18 @@ $(document).ready(function () {
                 id_tipo_arquivo: modelo.id_tipo_arquivo
             })
 
+
             id_layout = modelo.id_layout
             id_tipo_arquivo = modelo.id_tipo_arquivo
 
             layout_colunas = Object.entries(resultado.data.layout_colunas)
             modelo = resultado.data.modelo
+
+            if (modelo.status !== 'P') {
+                existeArquivoProcessado(modelo.id_modelo, modelo.id_concorrente)
+            }
+
+            // console.log(modelo)
 
             convertidosHeaders = Object.values(resultado.data.arquivo_convertido[0])
             if (modelo.descr_tipo_arquivo == "xml" || modelo.descr_tipo_arquivo == "json" || modelo.descr_tipo_arquivo == "xlsx") {
@@ -366,7 +371,7 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
                 select_layout_coluna.onchange = oldOnChange;
             }
             div_input_grupo_append.appendChild(span_input_grupo_append)
-            
+
             const span_botao_depara = document.createElement("span")
             span_botao_depara.className = "input-group-text"
             span_botao_depara.style.borderRadius = "0 4px 4px 0"
