@@ -54,6 +54,10 @@ switch ($uri) {
         require  $baseDir . 'ConversaoController.php';
         $explodeUri[1]($data);
         break;
+    case 'conversao/atualizaColunaDePara':
+        require  $baseDir . 'ConversaoController.php';
+        $explodeUri[1]($data);
+        break;
 
     case 'modelo/processaArquivo':
         require $baseDir . 'ModeloController.php';

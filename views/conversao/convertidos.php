@@ -47,8 +47,8 @@
                 data: 'id_modelo',
                 orderable: false,
                 searchable: false,
-                render: function(data) {
-                    return '<a class="btn btn-primary btn-sm" href="/conversao/index?id_modelo=' + data + '"><i class="bi bi-pencil"></i></a>';
+                render: function(data, type, row) {
+                    return '<a class="btn btn-primary btn-sm" href="/conversao/index?id_modelo=' + data + '&id_arquivo=' + row.id_arquivo + '"><i class="bi bi-pencil"></i></a>';
                 }
             }, {
                 title: 'Nome arquivo',

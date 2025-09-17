@@ -7,7 +7,7 @@ function index()
     // $id_modelo = isset($_GET['id_modelo']) ? $_GET['id_modelo'] : '199';
 
     $id_modelo = isset($_GET['id_modelo']) ? $_GET['id_modelo'] : '';
-
+    $id_arquivo = isset($_GET['id_arquivo']) ? $_GET['id_arquivo'] : '';
     // $id_modelo = isset($_GET['id_modelo']) ? $_GET['id_modelo'] : '';
 
     $modelos_colunas = new stdClass();
@@ -36,7 +36,8 @@ function index()
         'concorrentes' => $concorrentes,
         'modelos_colunas' => $modelos_colunas,
         'modelo' => $modelo,
-        'tipos_arquivo' => $tipos_arquivo
+        'tipos_arquivo' => $tipos_arquivo,
+        'id_arquivo' => $id_arquivo
     ], 'function' => ''];
 }
 
@@ -150,7 +151,8 @@ function salvaVinculacaoConvertidoLayout($data)
     // verifica se ja esta cadastrado
     $sql_exist = "SELECT id_modelo_coluna
     FROM modelos_colunas 
-    WHERE id_layout_coluna = $id_layout_coluna 
+    -- WHERE id_layout_coluna = $id_layout_coluna 
+    WHERE descricao_coluna = '$descricao_coluna' 
     AND id_modelo = $id_modelo 
     AND id_concorrente = $id_concorrente";
 
@@ -160,16 +162,23 @@ function salvaVinculacaoConvertidoLayout($data)
     $data = [];
 
     if (is_object($if_exist) && count((array)$if_exist) > 0) {
-        $sql_insert = "UPDATE modelos_colunas SET descricao_coluna = ? 
-        WHERE id_layout_coluna = ? 
-            AND id_modelo = ? 
-            AND id_concorrente = ?";
-        $binds = 'siii';
+        // $sql_insert = "UPDATE modelos_colunas SET descricao_coluna = ? 
+        // WHERE id_layout_coluna = ? 
+        //     AND id_modelo = ? 
+        //     AND id_concorrente = ?";
+        // $binds = 'siii';
+        // $data = [
+        //     $descricao_coluna,
+        //     $id_layout_coluna,
+        //     $id_modelo,
+        //     $id_concorrente
+        // ];
+        $sql_insert = "UPDATE modelos_colunas SET id_layout_coluna = ?
+        WHERE id_modelo_coluna = ?";
+        $binds = 'ii';
         $data = [
-            $descricao_coluna,
             $id_layout_coluna,
-            $id_modelo,
-            $id_concorrente
+            $if_exist->id_modelo_coluna
         ];
     } else {
         $sql_insert = "INSERT INTO modelos_colunas (descricao_coluna, posicao_coluna, id_layout_coluna, id_modelo, id_concorrente, ativo) VALUES (?,?,?,?,?,?)";
@@ -188,12 +197,43 @@ function salvaVinculacaoConvertidoLayout($data)
     return_api(200, '', []);
 }
 
+function atualizaColunaDePara($data) {
+    $id_layout_coluna = isset($data['id_layout_coluna']) ? (int)$data['id_layout_coluna'] : 0;
+    $id_modelo = isset($data['id_modelo']) ? (int)$data['id_modelo'] : 0;
+    $descricao_coluna = isset($data['descricao_coluna']) ? $data['descricao_coluna'] : '';
+    $valores = isset($data['valores']) && is_array($data['valores']) ? $data['valores'] : [];
+
+    if (!$id_layout_coluna || !$id_modelo || empty($descricao_coluna)) {
+        return_api(400, 'Parâmetros inválidos', []);
+        return;
+    }
+
+    $sql = "SELECT id_modelo_coluna FROM modelos_colunas WHERE id_modelo = $id_modelo AND id_layout_coluna = $id_layout_coluna";
+    $modelo_coluna = metodo_get($sql, 'migracao');
+
+    $sql = "SELECT 
+                l.id, l.id_layout_coluna, m.descricao_coluna, l.conteudo_de, l.Conteudo_para_livre, l.substituir
+            FROM layout_coluna_depara l
+            LEFT JOIN modelos_colunas m ON l.id_layout_coluna = m.id_layout_coluna
+            WHERE l.id_layout_coluna = $id_layout_coluna
+                AND (" . ($modelo_coluna && isset($modelo_coluna->id_modelo_coluna) ? "l.id_modelo_coluna = {$modelo_coluna->id_modelo_coluna} OR " : "") . "l.id_modelo_coluna IS NULL)";
+    $deparas = metodo_all($sql, 'migracao');
+
+    $valores_transformados = [];
+    foreach ($valores as $valor) {
+        $valores_transformados[] = ConvertService::aplicarDePara($valor, $descricao_coluna, $deparas);
+    }
+
+    return_api(200, '', ['valores' => $valores_transformados]);
+}
+
 function EditVinculacaoArquivo($data)
 {
     $id_modelo = $data['id_modelo'];
     $id_layout = $data['id_layout'];
     $id_concorrente = $data['id_concorrente'];
     $id_tipo_arquivo = $data['id_tipo_arquivo'];
+    $id_arquivo = $data['id_arquivo'];
 
 
 
@@ -204,7 +244,8 @@ function EditVinculacaoArquivo($data)
     WHERE m.id_modelo = $id_modelo
     AND m.id_layout = $id_layout
     AND m.id_concorrente = $id_concorrente
-    AND m.id_tipo_arquivo = $id_tipo_arquivo";
+    AND m.id_tipo_arquivo = $id_tipo_arquivo
+    AND a.id_arquivo = $id_arquivo";
     $resultado = metodo_get($sql, "migracao");
 
     // ==========================================================================
@@ -235,7 +276,7 @@ function EditVinculacaoArquivo($data)
     if (!file_exists($tmpFile))
         die("Arquivo não encontrado: " . $tmpFile);
 
-    $convert = new ConvertService();
+    $convert = new ConvertService($modelos_colunas);
     $converted = $convert->converter($tmpFile, $extension_file, $resultado->descr_tipo_arquivo);
 
     return_api(200, '', [

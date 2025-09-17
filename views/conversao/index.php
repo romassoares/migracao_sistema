@@ -137,4 +137,5 @@
 <script>
     var modelo = <?= json_encode($modelo) ?>;
     var modelos_colunas = <?= json_encode($modelos_colunas) ?>;
+    var id_arquivo = <?= json_encode(isset($_GET['id_arquivo']) ? $_GET['id_arquivo'] : '') ?>;
 </script>
