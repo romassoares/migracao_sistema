@@ -22,6 +22,14 @@ function trata_json_request($json)
     $request = [];
 
     foreach ($data1 as $key => $value) {
+        if (is_array($value)) {
+            $request[$key] = $value; // preserva arrays do JSON
+            continue;
+        }
+        if (is_object($value)) {
+            $request[$key] = (array)$value; // opcional: converte objetos aninhados
+            continue;
+        }
         $request[$key] = filter_var($value, FILTER_DEFAULT);
     }
 

@@ -6,14 +6,17 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 class ExcelToArrayService
 {
     private $php_office;
+    private $depara_rules;
 
-    function __construct($extensao)
+    function __construct($extensao, $depara_rules)
     {
         if ($extensao == 'xls')
             $this->php_office = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
 
         if ($extensao == 'xlsx')
             $this->php_office = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+
+        $this->depara_rules = $depara_rules;
     }
 
     public function convert($arquivo)
@@ -41,7 +44,8 @@ class ExcelToArrayService
                 if (!empty($colName)) {
                     $exploded = explode('.', $colName);
                     $name_column = end($exploded);
-                    $record[$name_column] = $row[$i];
+                    $valor = ConvertService::aplicarDePara($row[$i], $colName, $this->depara_rules);
+                    $record[$name_column] = $valor;
                 }
             }
             $children[] = $record;

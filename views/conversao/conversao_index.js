@@ -3,6 +3,7 @@ var modelo = []
 var convertidosHeaders = []
 var layout_colunas = []
 var modelos_colunas = []
+var id_arquivo = ""
 
 var id_layout = ""
 var id_tipo_arquivo = ""
@@ -37,7 +38,8 @@ $(document).ready(function () {
                 id_modelo: modelo.id_modelo,
                 id_layout: modelo.id_layout,
                 id_concorrente: modelo.id_concorrente,
-                id_tipo_arquivo: modelo.id_tipo_arquivo
+                id_tipo_arquivo: modelo.id_tipo_arquivo,
+                id_arquivo: id_arquivo
             })
 
 
@@ -572,6 +574,32 @@ async function salvaVinculacaoColunaConvetidoComLayoutColunas(select) {
     //     if (resultado.data.msg !== '')
     //         alert(resultado.data.msg)
     // }
+    atualizaTabelaComDePara(select);
+}
+
+async function atualizaTabelaComDePara(select)
+{
+    const id_ref_col = select.id.replace("select_layout_coluna_", '');
+    const tabela = document.querySelector('#tbl_valores_convertidos_header_' + id_ref_col);
+    const valores = Array.from(tabela?.querySelectorAll('tbody tr td') || [])
+        .map(td => td.innerText)
+        .filter(v => v !== undefined);
+
+    const dataJson = {
+        id_layout_coluna: select.value,
+        id_modelo: document.querySelector('#modelo_id').value,
+        descricao_coluna: document.querySelector('#input_convertido_header_' + id_ref_col).value,
+        valores: valores
+    };
+
+    const resp = await method_post('/conversao/atualizaColunaDePara', dataJson)
+    if (resp && resp.status && resp.data && Array.isArray(resp.data.valores)) {
+        const tds = Array.from(tabela.querySelectorAll('tbody tr td'));
+        const novos = resp.data.valores;
+        for (let i = 0; i < Math.min(tds.length, novos.length); i++) {
+            tds[i].innerText = novos[i];
+        }
+    }
 }
 
 async function removeColunaModelo(select, ol_value) {
