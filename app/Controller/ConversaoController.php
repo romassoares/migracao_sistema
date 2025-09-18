@@ -117,7 +117,7 @@ function uploadArquivo()
         insert_update($sql, "siiis", [
             $nomeArquivoCopiado,
             $qntItems,
-            $modelo->id_concorrente,
+            $_SESSION['company']['id'],
             $modelo->id_modelo,
             'E'
         ], 'migracao');
@@ -328,7 +328,7 @@ function convertidos()
     LEFT JOIN concorrentes c ON m.id_concorrente = c.id
     LEFT JOIN layout l ON m.id_layout = l.id
     LEFT JOIN tipos_arquivos t_a ON m.id_tipo_arquivo = t_a.id_tipo_arquivo
-    WHERE a.status = 'E' and a.id_cliente = $id_cliente
+    WHERE a.id_cliente = $id_cliente
     GROUP BY a.id_arquivo
     ORDER BY a.id_arquivo DESC";
 

@@ -180,16 +180,15 @@ function processaArquivo($data)
             LEFT JOIN tipos_arquivos AS t ON m.id_tipo_arquivo = t.id_tipo_arquivo
             LEFT JOIN layout AS l ON m.id_layout = l.id
             LEFT JOIN concorrentes AS c ON m.id_concorrente = c.id
-            WHERE id_modelo = " . intval($data['id_modelo']) . " and id_layout = " . intval($data['id_layout']) . " and id_concorrente = " . intval($data['id_concorrente']) . " and m.id_tipo_arquivo = " . intval($data['id_tipo_arquivo']);
+            WHERE m.id_modelo = " . intval($data['id_modelo']) . " and m.id_layout = " . intval($data['id_layout']) . " and m.id_concorrente = " . intval($data['id_concorrente']) . " and m.id_tipo_arquivo = " . intval($data['id_tipo_arquivo']);
 
     $modelo = metodo_get($sql, 'migracao');
-
 
     $layout_colunas_depara = metodo_all("SELECT l_depara.conteudo_de,l_depara.Conteudo_para_livre,l_depara.substituir, l_col_conteu.conteudo AS conteudo_layout, l_col_conteu.descricao as descricao_coluna
                                 FROM layout_colunas AS l_col
                                 LEFT JOIN layout_coluna_conteudos AS l_col_conteu USING(id) 
                                 LEFT JOIN layout_coluna_depara AS l_depara ON l_col_conteu.id = l_depara.id_layout_coluna
-                                WHERE id_layout = $modelo->id_layout 
+                                WHERE id_layout =" . intval($data['id_layout']) . " 
                                 ORDER BY posicao", 'migracao');
 
     $modelo_colunas = metodo_all("SELECT * FROM modelos_colunas 
@@ -197,8 +196,8 @@ function processaArquivo($data)
                                   ORDER BY posicao_coluna", 'migracao');
 
     $arquivo = metodo_get("SELECT * FROM arquivos 
-                            WHERE id_modelo = {$modelo->id_modelo} 
-                              AND id_cliente = {$modelo->id_concorrente} 
+                            WHERE id_modelo = " . intval($data['id_modelo']) . " 
+                              AND id_cliente = " . $_SESSION['company']['id'] . " 
                             LIMIT 1", 'migracao');
 
     $arq_cli = "./assets/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/{$modelo->id_modelo}/{$arquivo->nome_arquivo}";
@@ -224,8 +223,7 @@ function processaArquivo($data)
     processaArrayForExcel($modelo_colunas, $dados, $headers, $spreadsheet, $sheet, $modelo);
 
 
-
-    return;
+    return return_api(200, '', $arquivo->status);
 }
 
 

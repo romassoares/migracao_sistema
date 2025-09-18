@@ -49,11 +49,10 @@ $(document).ready(function () {
             layout_colunas = Object.entries(resultado.data.layout_colunas)
             modelo = resultado.data.modelo
 
-            if (modelo.status !== 'P') {
-                existeArquivoProcessado(modelo.id_modelo, modelo.id_concorrente)
-            } else {
-                document.querySelector("#div_btn_upload_arquivo").className = 'd-flex col mt-2'
+            if (modelo.status == 'P') {
+                existeArquivoProcessado()
             }
+
 
             // console.log(modelo)
 
@@ -91,10 +90,12 @@ $(document).ready(function () {
                 });
             }, 500)
         }, 1000)
+    } else {
+        document.querySelector("#div_btn_upload_arquivo").className = 'd-flex col mt-2'
     }
 });
 
-function existeArquivoProcessado(id_modelo, id_concorrente) {
+function existeArquivoProcessado() {
     let div_btn_processados_arquivo = document.querySelector("#div_btn_processados_arquivo")
     div_btn_processados_arquivo.className = 'card col-md-6 col-sm-12 d-flex justify-content-center align-items-center p-2'
 }
@@ -163,6 +164,7 @@ function habilitaDesabilitaModelo(action) {
         classNameDivUpload = 'd-flex'
 
     document.querySelector("#div_upload_arquivo").className = classNameDivUpload
+
 }
 
 var class_input_form_control = ' form-control '
@@ -195,7 +197,7 @@ document.querySelector("#id_form_modelo").addEventListener("submit", async funct
     var value_input_nome = document.querySelector("#nome_modelo_modal").value
     var value_input_layout_id = document.querySelector("#layout_id").value
     var value_id_concorrente = document.querySelector("#concorrente_id").value
-    var id_tipo_arquivo = document.querySelector("#id_tipo_arquivo").value
+    id_tipo_arquivo = document.querySelector("#id_tipo_arquivo").value
     var errors = ''
 
     if (value_input_nome == '') {
@@ -252,7 +254,7 @@ document.querySelector("#id_form_modelo").addEventListener("submit", async funct
 document.querySelector("#id_form_upload_arquivo").addEventListener('submit', async function (e) {
     e.preventDefault()
     document.querySelector("#div_upload_arquivo").className = 'd-none'
-
+    document.querySelector("#btn_processa_arquivo").className = 'd-flex col mt-2'
     document.querySelector("#load").style.display = 'block'
 
     var modelo_id = document.querySelector("#modelo_id").value
@@ -623,6 +625,7 @@ async function removeColunaModelo(select, ol_value) {
 
 
 async function processaArquivo() {
+    document.querySelector("#div_upload_arquivo").className = 'd-none'
     document.querySelector("#load").style.display = 'block'
 
     var modelo_id = document.querySelector("#modelo_id").value
@@ -646,6 +649,8 @@ async function processaArquivo() {
         // document.body.appendChild(link);
         // link.click();
         // link.remove();
+
+        existeArquivoProcessado()
     }).catch(error => {
         console.error('Erro ao gerar Excel:', error);
     });
