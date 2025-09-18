@@ -23,7 +23,7 @@ $(document).ready(function () {
 
     if (modelo.id_concorrente) {
 
-        document.querySelector("#btn_processa_arquivo").className = 'col mt-2'
+        document.querySelector("#btn_processa_arquivo").className = 'd-flex col mt-2'
         document.querySelector("#load").style.display = 'block'
         dispararEventoEmSelect(document.querySelector("#concorrente_id"), modelo.id_concorrente)
 
@@ -51,6 +51,8 @@ $(document).ready(function () {
 
             if (modelo.status !== 'P') {
                 existeArquivoProcessado(modelo.id_modelo, modelo.id_concorrente)
+            } else {
+                document.querySelector("#div_btn_upload_arquivo").className = 'd-flex col mt-2'
             }
 
             // console.log(modelo)
@@ -93,7 +95,6 @@ $(document).ready(function () {
 });
 
 function existeArquivoProcessado(id_modelo, id_concorrente) {
-    // console.log('arquivoProcessado ', id_modelo, id_concorrente)
     let div_btn_processados_arquivo = document.querySelector("#div_btn_processados_arquivo")
     div_btn_processados_arquivo.className = 'card col-md-6 col-sm-12 d-flex justify-content-center align-items-center p-2'
 }
@@ -577,8 +578,7 @@ async function salvaVinculacaoColunaConvetidoComLayoutColunas(select) {
     atualizaTabelaComDePara(select);
 }
 
-async function atualizaTabelaComDePara(select)
-{
+async function atualizaTabelaComDePara(select) {
     const id_ref_col = select.id.replace("select_layout_coluna_", '');
     const tabela = document.querySelector('#tbl_valores_convertidos_header_' + id_ref_col);
     const valores = Array.from(tabela?.querySelectorAll('tbody tr td') || [])

@@ -47,13 +47,11 @@
                         <div class="col-12">
                             <input type="file" name="arquivo" id="arquivo" class="form-control form-control-sm">
                         </div>
-                        <?php if (empty($modelo->id_modelo)) { ?>
-                            <div class="col mt-2">
-                                <button type="submit" class="btn btn-success btn-sm">
-                                    carregar arquivo
-                                </button>
-                            </div>
-                        <?php } ?>
+                        <div class="d-none" id="div_btn_upload_arquivo">
+                            <button type="submit" class="btn btn-success btn-sm">
+                                carregar arquivo
+                            </button>
+                        </div>
                     </form>
                 </div>
 
