@@ -197,7 +197,8 @@ function salvaVinculacaoConvertidoLayout($data)
     return_api(200, '', []);
 }
 
-function atualizaColunaDePara($data) {
+function atualizaColunaDePara($data)
+{
     $id_layout_coluna = isset($data['id_layout_coluna']) ? (int)$data['id_layout_coluna'] : 0;
     $id_modelo = isset($data['id_modelo']) ? (int)$data['id_modelo'] : 0;
     $descricao_coluna = isset($data['descricao_coluna']) ? $data['descricao_coluna'] : '';
@@ -311,6 +312,8 @@ function removeVinculacaoConvertidoLayout($data)
 
 function convertidos()
 {
+    $id_cliente = $_SESSION['company']['id'];
+
     $sql = "SELECT 
         a.id_arquivo, 
         a.nome_arquivo,
@@ -325,7 +328,7 @@ function convertidos()
     LEFT JOIN concorrentes c ON m.id_concorrente = c.id
     LEFT JOIN layout l ON m.id_layout = l.id
     LEFT JOIN tipos_arquivos t_a ON m.id_tipo_arquivo = t_a.id_tipo_arquivo
-    WHERE a.status = 'E'
+    WHERE a.status = 'E' and a.id_cliente = $id_cliente
     GROUP BY a.id_arquivo
     ORDER BY a.id_arquivo DESC";
 
@@ -349,7 +352,7 @@ function deparaIndex()
 
     $id_layout_coluna = $request['dados']['id_layout_coluna'];
     $id_modelo = $request['dados']['id_modelo'];
-    
+
 
     // echo "<pre>";
     // print_r($deparas);
@@ -375,9 +378,9 @@ function deparaIndex()
         'data' => [
             'deparas' => $deparas,
             'tipo' => $tipo->tipo,
-            'id_layout_coluna' => $id_layout_coluna, 
-            'id_modelo' => $id_modelo, 
-            'concorrente' => $concorrente->nome, 
+            'id_layout_coluna' => $id_layout_coluna,
+            'id_modelo' => $id_modelo,
+            'concorrente' => $concorrente->nome,
             'layout' => $layout->nome,
             'descricao_coluna' => $coluna->descricao_coluna
         ],
@@ -391,10 +394,10 @@ function deletarTodosDepara()
     $id_modelo = isset($_GET['id_modelo']) ? $_GET['id_modelo'] : '';
     $id = isset($_GET['id']) ? $_GET['id'] : '';
 
-    if($id_layout_coluna && $id_modelo) {
+    if ($id_layout_coluna && $id_modelo) {
         $sql = "DELETE FROM layout_coluna_depara WHERE id_layout_coluna = ? AND (id_modelo_coluna IS NULL OR id_modelo_coluna = (SELECT id_modelo_coluna FROM modelos_colunas WHERE id_modelo = $id_modelo AND id_layout_coluna = $id_layout_coluna))";
-        insert_update($sql, "i", [$id_layout_coluna], 'migracao');        
-    } else if($id) {
+        insert_update($sql, "i", [$id_layout_coluna], 'migracao');
+    } else if ($id) {
         $sql = 'DELETE FROM layout_coluna_depara WHERE id = ?';
         insert_update($sql, "i", [$id], 'migracao');
     }
@@ -410,7 +413,7 @@ function deletarDepara()
         return_api(404, "ID não informado", []);
         return;
     }
-    
+
     $sql = 'DELETE FROM layout_coluna_depara WHERE id = ?';
     insert_update($sql, "i", [$id], 'migracao');
 
@@ -433,16 +436,16 @@ function deparaSalvar()
     $modelo_coluna = metodo_get($sql, 'migracao');
 
     // Atualiza os novos cards
-    if(isset($_POST['novo_card_ids']) && is_array($_POST['novo_card_ids']) && count($_POST['novo_card_ids']) > 0) {
-        foreach($_POST['novo_card_ids'] as $i) {
+    if (isset($_POST['novo_card_ids']) && is_array($_POST['novo_card_ids']) && count($_POST['novo_card_ids']) > 0) {
+        foreach ($_POST['novo_card_ids'] as $i) {
 
             $de = isset($_POST["novo_depara_de_{$i}"]) ? $_POST["novo_depara_de_{$i}"] : '';
             $para = isset($_POST["novo_depara_para_{$i}"]) ? $_POST["novo_depara_para_{$i}"] : '';
             $substituir = isset($_POST["novo_substituir_{$i}"]) ? $_POST["novo_substituir_{$i}"] : '';
             $qualquer_concorrente = isset($_POST["novo_qualquer_concorrente_{$i}"]) ? true : false;
 
-            if(!empty($de)) {
-                if($qualquer_concorrente) {
+            if (!empty($de)) {
+                if ($qualquer_concorrente) {
                     $sql = "INSERT INTO layout_coluna_depara (id_layout_coluna, conteudo_de, Conteudo_para_livre, substituir) VALUES (?,?,?,?)";
                     insert_update($sql, "isss", [
                         $id_layout_coluna,
@@ -468,25 +471,27 @@ function deparaSalvar()
     foreach ($_POST as $key => $value) {
         if (strpos($key, 'depara_de_') === 0) {
             $id = str_replace('depara_de_', '', $key);
-            
+
             $de = $value;
             $para = isset($_POST["depara_para_{$id}"]) ? $_POST["depara_para_{$id}"] : '';
             $substituir = isset($_POST["substituir_{$id}"]) ? 1 : 0;
             $qualquer_concorrente = isset($_POST["qualquer_concorrente_{$id}"]) ? 1 : 0;
-            
+
             if (!empty($de)) {
                 $sql = "UPDATE layout_coluna_depara 
                         SET conteudo_de = ?, Conteudo_para_livre = ?, substituir = ?";
                 $sql .= $qualquer_concorrente == 1 ? ", id_modelo_coluna = NULL" : ", id_modelo_coluna = " . $modelo_coluna->id_modelo_coluna;
                 $sql .= " WHERE id = ?";
-                
-                insert_update($sql, "ssii", 
+
+                insert_update(
+                    $sql,
+                    "ssii",
                     [
-                        $de, 
-                        $para, 
-                        $substituir, 
+                        $de,
+                        $para,
+                        $substituir,
                         $id
-                    ], 
+                    ],
                     'migracao'
                 );
             }
