@@ -1,54 +1,53 @@
 <?php include_once __DIR__ . '/../includes/head.php' ?>
 
-<div class="card col-10">
+<div class="card col-12">
     <div class="card-header">
         Concorrente
     </div>
     <div class="card-body">
-        <div class="d-flex justify-content-end">
-            <button class="btn btn-primary btn-sm">NOVO</button>
-        </div>
-        <div class="d-flex mt-3">
-            <div class=" card col-4 p-2">
-                <form id="id_form" action="concorrente/store" method="post">
-                    <input type="hidden" name="id" id="id">
-                    <div class="d-flex">
-                        <input type="text" id="nome" name="nome" class="form-control form-control-sm">
-                        <button type="submit" class="btn btn-primary btn-sm">salvar</button>
-                    </div>
-                </form>
+        <form id="id_form" action="/concorrente/store" method="post">
+            <input type="hidden" name="id" id="id">
+            <div class="d-flex">
+                <input type="text" id="nome" name="nome" class="form-control form-control-sm">
+                <button type="submit" class="btn btn-primary btn-sm">salvar</button>
             </div>
+        </form>
+        <div class=" mt-3">
+            <table class="table table-striped display" id="table_layout"></table>
 
-            <div class="card col-8 mx-2 p-2">
-                <table id="table_layout">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Nome</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($concorrentes as $concorrente) { ?>
-                            <tr>
-                                <td><?php echo $concorrente['id'] ?></td>
-                                <td><?php echo $concorrente['nome'] ?></td>
-                                <td>
-                                    <div class="d-flex">
-                                        <button onclick="setFieldsForUpdate('<?php echo $concorrente['id'] ?>','<?php echo $concorrente['nome'] ?>')" class="btn btn-primary btn-sm"><i class="bi bi-pencil"></i></button>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php } ?>
-                    </tbody>
-                </table>
-            </div>
         </div>
     </div>
 </div>
 
 <?php include_once __DIR__ . '/../includes/scripts.php' ?>
 <script>
+    var concorrentes = <?= json_encode($concorrentes) ?>;
+
+    $('#table_layout').DataTable({
+        order: [
+            [1, 'asc']
+        ],
+        responsive: true,
+        language: {
+            url: "//cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json"
+        },
+        data: concorrentes,
+        columns: [{
+            title: '',
+            orderable: false,
+            searchable: false,
+            render: function(data, type, row) {
+                return `<button class="btn btn-primary btn-sm"
+                            onclick="setFieldsForUpdate(${row.id}, '${String(row.nome).replace(/'/g, "\\'")}')">
+                            <i class="bi bi-pencil"></i>
+                        </button>`;
+            }
+        }, {
+            title: 'Nome ',
+            data: 'nome'
+        }]
+    });
+
     function setFieldsForUpdate(id, value) {
         window.scrollTo(0, 0)
         document.querySelector("#id").value = id

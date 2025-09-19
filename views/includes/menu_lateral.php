@@ -66,16 +66,16 @@
                     <i class="bi bi-people me-2"></i> Concorrentes
                 </a>
             </li>
-            <li class="nav-item">
+            <!-- <li class="nav-item">
                 <a href="/layout_colunas/index" class="nav-link text-white d-flex align-items-center">
                     <i class="bi bi-columns-gap me-2"></i> Layout colunas
                 </a>
-            </li>
-            <li class="nav-item">
+            </li> -->
+            <!-- <li class="nav-item">
                 <a href="/modelo/index" class="nav-link text-white d-flex align-items-center">
                     <i class="bi bi-briefcase me-2"></i> Modelos
                 </a>
-            </li>
+            </li> -->
             <li class="nav-item">
                 <a href="/conversao/convertidos" class="nav-link text-white d-flex align-items-center">
                     <i class="bi bi-briefcase me-2"></i> Convertidos
