@@ -67,28 +67,28 @@ $(document).ready(function () {
 
             montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, convertidosHeaders)
 
-            setTimeout(() => {
-                modelos_colunas.forEach((el) => {
-                    const el_select = document.querySelector("#select_layout_coluna_" + el[1].id_layout_coluna);
-                    if (!el_select) return;
+            // setTimeout(() => {
+            modelos_colunas.forEach((el) => {
+                const el_select = document.querySelector("#select_layout_coluna_" + el[1].id_layout_coluna);
+                if (!el_select) return;
 
-                    const valor = el[1].descricao_coluna;
+                const valor = el[1].descricao_coluna;
 
-                    const oldOnChange = el_select.onchange;
-                    el_select.onchange = null;
+                const oldOnChange = el_select.onchange;
+                el_select.onchange = null;
 
-                    $(el_select).val(valor).trigger('change.select2');
+                $(el_select).val(valor).trigger('change.select2');
 
-                    const optionToDisable = el_select.querySelector(`option[value="${valor}"]`);
-                    if (optionToDisable) {
-                        optionToDisable.disabled = true;
-                    }
-                    atualizaColunas()
-                    document.querySelector("#load").style.display = 'none'
+                // const optionToDisable = el_select.querySelector(`option[value="${valor}"]`);
+                // if (optionToDisable) {
+                //     optionToDisable.disabled = true;
+                // }
 
-                    el_select.onchange = oldOnChange;
-                });
-            }, 500)
+                el_select.onchange = oldOnChange;
+            });
+            atualizaColunas()
+            document.querySelector("#load").style.display = 'none'
+            // }, 500)
         }, 1000)
     } else {
         document.querySelector("#div_btn_upload_arquivo").className = 'd-flex col mt-2'
