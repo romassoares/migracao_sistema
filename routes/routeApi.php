@@ -64,6 +64,11 @@ switch ($uri) {
         $explodeUri[1]($data);
         // redirect('modelo/processaArquivo');
         break;
+
+    case 'arquivo/baixarArquivo':
+        require  $baseDir . 'ArquivoController.php';
+        $explodeUri[1]($data);
+        break;
     // ==============================================
     default:
         return_api(404, 'not found');

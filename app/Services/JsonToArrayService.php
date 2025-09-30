@@ -33,8 +33,10 @@ class JsonToArrayService
         $conteudo = $this->converterObjetosParaArray($conteudo);
 
         $caminhos_absolutos = [];
-        $this->monta_caminhos_absolutos_arquivo($conteudo, $caminhos_absolutos);
+        monta_caminhos_absolutos_arquivo($conteudo, $caminhos_absolutos);
+
         $headers = array_unique($caminhos_absolutos);
+
 
         return [$headers, $conteudo];
     }
@@ -50,32 +52,5 @@ class JsonToArrayService
         }
 
         return $data;
-    }
-
-    public function monta_caminhos_absolutos_arquivo($items, &$caminhos_absolutos, $prefix = '')
-    {
-        foreach ($items as $key => $value) {
-            $segment = '';
-            if (is_numeric($key)) {
-                if (empty($prefix)) {
-                    $segment = '';
-                } else {
-                    $segment = $prefix;
-                }
-            } else {
-                if ($prefix === '') {
-                    $segment = $key;
-                } else {
-                    $segment = $prefix . '.' . $key;
-                }
-            }
-            $currentPrefix = $segment;
-
-            if (is_array($value)) {
-                $this->monta_caminhos_absolutos_arquivo($value, $caminhos_absolutos, $currentPrefix);
-            } elseif (is_scalar($value) || is_null($value)) {
-                $caminhos_absolutos[] = $currentPrefix;
-            }
-        }
     }
 }

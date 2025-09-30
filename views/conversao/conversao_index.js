@@ -473,7 +473,7 @@ const getValue = (row, header) => {
 
     const parts = Array.isArray(header)
         ? header
-        : String(header).split('.').filter(Boolean);
+        : String(header).split('/').filter(Boolean);
 
     if (parts.length === 0) {
         return Array.isArray(row) ? row : [row];
@@ -639,21 +639,50 @@ async function processaArquivo() {
             id_concorrente: id_concorrente,
             id_layout: id_layout,
             id_tipo_arquivo: id_tipo_arquivo
-        },
-        // responseType: 'blob' // <- isso é essencial
+        }
     }).then(response => {
-        // const url = window.URL.createObjectURL(new Blob([response.data]));
-        // const link = document.createElement('a');
-        // link.href = url;
-        // link.setAttribute('download', 'imoveis.xlsx');
-        // document.body.appendChild(link);
-        // link.click();
-        // link.remove();
-
         existeArquivoProcessado()
     }).catch(error => {
         console.error('Erro ao gerar Excel:', error);
     });
 
     document.querySelector("#load").style.display = 'none'
+}
+
+
+
+function baixarArquivo(tipo) {
+    var modelo_id = document.querySelector("#modelo_id").value;
+
+    axios({
+        method: 'post',
+        url: '/arquivo/baixarArquivo',
+        data: {
+            id_modelo: modelo_id,
+            tipo: tipo
+        },
+        // responseType: 'blob'
+    }).then(response => {
+        // const url = window.URL.createObjectURL(new Blob([response.data]));
+        // const link = document.createElement('a');
+        // link.href = url;
+
+        // // tenta extrair nome do arquivo do header
+        // const disposition = response.headers['content-disposition'];
+        // let fileName = "arquivo.xlsx";
+        // if (disposition && disposition.indexOf('filename=') !== -1) {
+        //     const matches = disposition.match(/filename="?([^"]+)"?/);
+        //     if (matches != null && matches[1]) fileName = matches[1];
+        // }
+
+        // link.setAttribute('download', fileName);
+        // document.body.appendChild(link);
+        // link.click();
+        // link.remove();
+
+        // window.URL.revokeObjectURL(url);
+    }).catch(error => {
+        console.error(error);
+        alert('Erro ao baixar arquivo');
+    });
 }

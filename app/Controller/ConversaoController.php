@@ -8,6 +8,7 @@ function index()
 
     $id_modelo = isset($_GET['id_modelo']) ? $_GET['id_modelo'] : '';
     $id_arquivo = isset($_GET['id_arquivo']) ? $_GET['id_arquivo'] : '';
+    // $nome_arquivo = isset($_GET['nome_arquivo']) ? $_GET['nome_arquivo'] : '';
     // $id_modelo = isset($_GET['id_modelo']) ? $_GET['id_modelo'] : '';
 
     $modelos_colunas = new stdClass();
@@ -112,15 +113,46 @@ function uploadArquivo()
 
         $nomeArquivoCopiado = $nomeArquivo . '_' . date('i') . '_' . date('s') . '.' . $extension_file;
 
-        $sql = "INSERT INTO arquivos (nome_arquivo, quantidade_registros, id_cliente, id_modelo, status) VALUES (?, ?, ?, ?, ?)";
+        // =================================================
+        // =================================================
 
-        insert_update($sql, "siiis", [
-            $nomeArquivoCopiado,
-            $qntItems,
-            $_SESSION['company']['id'],
-            $modelo->id_modelo,
-            'E'
-        ], 'migracao');
+        // Buscar se já existe o arquivo
+        $sql_exist_arquivo = metodo_get(
+            "SELECT id_arquivo FROM arquivos WHERE id_cliente = " . $_SESSION['company']['id'] . " AND id_modelo =  $modelo->id_modelo",
+            'migracao'
+        );
+
+        $binds_arquivo = '';
+        $dados_arquivos = [];
+
+        if ($sql_exist_arquivo && isset($sql_exist_arquivo->id_arquivo)) {
+            // Atualiza arquivo existente
+            $sql = "UPDATE arquivos 
+            SET nome_arquivo = ?, status = ? 
+            WHERE id_cliente = ? AND id_modelo = ?";
+            $binds_arquivo = 'ssii';
+            $dados_arquivos = [
+                $nomeArquivoCopiado,
+                'E',
+                $_SESSION['company']['id'],
+                $modelo->id_modelo,
+            ];
+        } else {
+            // Insere novo arquivo
+            $sql = "INSERT INTO arquivos 
+            (nome_arquivo, quantidade_registros, id_cliente, id_modelo, status) 
+            VALUES (?, ?, ?, ?, ?)";
+            $binds_arquivo = 'siiis';
+            $dados_arquivos = [
+                $nomeArquivoCopiado,
+                $qntItems,
+                $_SESSION['company']['id'],
+                $modelo->id_modelo,
+                'E'
+            ];
+        }
+
+        insert_update($sql, $binds_arquivo, $dados_arquivos, 'migracao');
 
         // =================================================
         // =================================================
@@ -248,7 +280,7 @@ function EditVinculacaoArquivo($data)
     AND m.id_tipo_arquivo = $id_tipo_arquivo
     AND a.id_arquivo = $id_arquivo";
     $resultado = metodo_get($sql, "migracao");
-
+    // dd($resultado);
     // ==========================================================================
 
     $sql_layout_colunas = "SELECT * 

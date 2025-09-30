@@ -63,9 +63,9 @@
             <div class="d-none" id="div_btn_processados_arquivo">
                 <div class="col-6 d-flex flex-column gap-2">
                     <p>Faça download dos arquivos processados:</p>
-                    <button class="btn btn-secondary btn-sm">Corretor</button>
-                    <button class="btn btn-secondary btn-sm">Criticados</button>
-                    <button class="btn btn-secondary btn-sm">Todos</button>
+                    <button onclick="baixarArquivo('Corretos')" class="btn btn-secondary btn-sm">Corretor</button>
+                    <button onclick="baixarArquivo('Criticados')" class="btn btn-secondary btn-sm">Criticados</button>
+                    <button onclick="baixarArquivo('Todos')" class="btn btn-secondary btn-sm">Todos</button>
                 </div>
             </div>
         </div>

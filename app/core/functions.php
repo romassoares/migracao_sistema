@@ -203,7 +203,6 @@ function monta_array($item, &$flattened, $prefix = '')
 
 
 
-
 function removeEmojis($text)
 {
     $corrigido = preg_replace('/[\x{1F600}-\x{1F64F}]|' .   // Emojis padrão
@@ -216,8 +215,21 @@ function removeEmojis($text)
         '[\x{1FA70}-\x{1FAFF}]|' .   // Suplemento adicional
         '[\x{1F018}-\x{1F270}]|' .   // Diversos
         '[\x{238C}-\x{2454}]|' .     // Símbolos técnicos
-        '[\x{20D0}-\x{20FF}]/u', '', $text);
+        '[\x{20D0}-\x{20FF}]|' .     // Marcas combinantes
+        '[\x{FE0F}]' .               // Variation Selector-16
+        '/u', '', $text);
+
+    $corrigido = preg_replace('/[\p{So}\p{Cn}]+/u', '', $corrigido);
+    $corrigido = preg_replace('/\p{Mn}+/u', '', $corrigido);
     return $corrigido;
+}
+
+function removeBOM($text)
+{
+    if (substr($text, 0, 3) === "\xEF\xBB\xBF") {
+        $text = substr($text, 3);
+    }
+    return $text;
 }
 
 // ---------------------------------------------------------------------------------
@@ -227,18 +239,97 @@ function convertToUtf8($string)
 
     $detectedCharset = mb_detect_encoding($string, ['UTF-8', 'ISO-8859-1', 'Windows-1252', 'ASCII', 'UCS-2'], true);
 
-    $string = mb_convert_encoding($string, "UTF-8", $detectedCharset);
-
-
-    $string = RemoveStrangeCharacter($string);
-
+    if ($detectedCharset == 'UCS-2') {
+        $detectedCharset = 'UCS-2LE';
+        $string = utf8_encode($string);
+    } else {
+        $string = mb_convert_encoding($string, "UTF-8", $detectedCharset);
+    }
 
     return $string;
 }
 
 function RemoveStrangeCharacter($string)
 {
-    $replacePairs = ['‡Ã' => 'O', 'Ã' => 'Í', 'Ã“' => 'Ó', 'Ã‡' => 'Ç', 'Ã”' => 'Ô', 'Ã‰' => 'É', 'Ãƒ' => 'Ã', 'ÃŠ' => 'Ê', 'Ã€' => 'À', 'Ã•' => 'Õ', 'Ãš' => 'Ú', 'Ã›' => 'Û', 'Ãœ' => 'Ü', 'Ã„' => 'Ä', 'Ã‹' => 'Ë', 'ÃŒ' => 'Ì', 'ÃŽ' => 'Î', 'Ã¯' => 'Ï', 'Ã³' => 'ó', 'Ã§' => 'ç', 'Ã¢' => 'â', 'Ãª' => 'ê', 'Ã¡' => 'á', 'Ã©' => 'é', 'Ã´' => 'ô', 'Ã£' => 'ã', 'Ãº' => 'ú', 'Ã¹' => 'ù', 'Ã»' => 'û', 'Ã¼' => 'ü', 'Ã¤' => 'ä', 'Ã«' => 'ë', 'Ã®' => 'î', 'Ã¬' => 'ì', 'Â²' => '²', 'Ã ' => 'à', 'â€“' => '–', 'â€”' => '—', 'â€˜' => '‘', 'â€™' => '’', 'â€œ' => '“', 'â€' => '”', 'â€¢' => '•', 'â€¦' => '…', 'â€' => '†', 'Â©' => '©', 'Â®' => '®', 'Â±' => '±', 'Âµ' => 'µ', 'Â¥' => '¥', 'Â§' => '§', 'Â«' => '«', 'Â»' => '»', 'Â°' => '°', 'Â¶' => '¶', 'Ã½' => 'ý', 'Ã¿' => 'ÿ', 'Ã–' => 'Ö', 'ÃŸ' => 'ß', 'Ã†' => 'Æ', 'Ã˜' => 'Ø', 'Ã…' => 'Å', 'Ã²' => 'ò', 'Ã­' => 'í', 'Â¾' => '¾', 'Â½' => '½', 'Â¼' => '¼', 'Â¢' => '¢', 'Â£' => '£', 'Â¤' => '¤', 'Â¬' => '¬', 'â‚¬' => '€', 'â„¢' => '™'];
+    $string = removeBOM($string);
+
+    $string = convertToUtf8($string);
+
+    $replacePairs = array(
+        '‡Ã' => 'O',
+        'Ã' => 'Í',
+        'Ã“' => 'Ó',
+        'Ã‡' => 'Ç',
+        'Ã”' => 'Ô',
+        'Ã‰' => 'É',
+        'Ãƒ' => 'Ã',
+        'ÃŠ' => 'Ê',
+        'Ã€' => 'À',
+        'Ã•' => 'Õ',
+        'Ãš' => 'Ú',
+        'Ã›' => 'Û',
+        'Ãœ' => 'Ü',
+        'Ã„' => 'Ä',
+        'Ã‹' => 'Ë',
+        'ÃŒ' => 'Ì',
+        'ÃŽ' => 'Î',
+        'Ã¯' => 'Ï',
+        'Ã³' => 'ó',
+        'Ã§' => 'ç',
+        'Ã¢' => 'â',
+        'Ãª' => 'ê',
+        'Ã¡' => 'á',
+        'Ã©' => 'é',
+        'Ã´' => 'ô',
+        'Ã£' => 'ã',
+        'Ãº' => 'ú',
+        'Ã¹' => 'ù',
+        'Ã»' => 'û',
+        'Ã¼' => 'ü',
+        'Ã¤' => 'ä',
+        'Ã«' => 'ë',
+        'Ã®' => 'î',
+        'Ã¬' => 'ì',
+        'Â²' => '²',
+        'Ã ' => 'à',
+        'â€“' => '–',
+        'â€”' => '—',
+        'â€˜' => '‘',
+        'â€™' => '’',
+        'â€œ' => '“',
+        'â€' => '”',
+        'â€¢' => '•',
+        'â€¦' => '…',
+        'â€' => '†',
+        'Â©' => '©',
+        'Â®' => '®',
+        'Â±' => '±',
+        'Âµ' => 'µ',
+        'Â¥' => '¥',
+        'Â§' => '§',
+        'Â«' => '«',
+        'Â»' => '»',
+        'Â°' => '°',
+        'Â¶' => '¶',
+        'Ã½' => 'ý',
+        'Ã¿' => 'ÿ',
+        'Ã–' => 'Ö',
+        'ÃŸ' => 'ß',
+        'Ã†' => 'Æ',
+        'Ã˜' => 'Ø',
+        'Ã…' => 'Å',
+        'Ã²' => 'ò',
+        'Ã­' => 'í',
+        'Â¾' => '¾',
+        'Â½' => '½',
+        'Â¼' => '¼',
+        'Â¢' => '¢',
+        'Â£' => '£',
+        'Â¤' => '¤',
+        'Â¬' => '¬',
+        'â‚¬' => '€',
+        'â„¢' => '™'
+    );
     $search = array_keys($replacePairs);
     $replace = array_values($replacePairs);
     $string = mb_str_replace($search, $replace, $string);
@@ -258,10 +349,17 @@ function RemoveStrangeCharacter($string)
     $string = str_replace("2️⃣", " - ", $string);
     $string = str_replace("1️⃣", " - ", $string);
     $string = str_replace("⛱️", " ", $string);
+    $string = str_replace("→", " ", $string);
+
+    $string = preg_replace('/[\x{2060}\x{0303}\x{FE0F}]/u', '', $string);
+
+    $string = removeEmojis($string);
+    $string = preg_replace('/[^\PC\s]/u', '', $string);
 
     if (class_exists('Normalizer')) {
         $string = Normalizer::normalize($string, Normalizer::FORM_C);
     }
+
     $string = preg_replace('/\x{FE0F}/u', '', $string);
     return $string;
 }
@@ -297,3 +395,31 @@ function refValues($arr)
 
 
 // ==========================================================
+
+
+function monta_caminhos_absolutos_arquivo($items, &$caminhos_absolutos, $prefix = '')
+{
+    foreach ($items as $key => $value) {
+        $segment = '';
+        if (is_numeric($key)) {
+            if (empty($prefix)) {
+                $segment = '';
+            } else {
+                $segment = $prefix;
+            }
+        } else {
+            if ($prefix === '') {
+                $segment = $key;
+            } else {
+                $segment = $prefix . '/' . $key;
+            }
+        }
+        $currentPrefix = $segment;
+
+        if (is_array($value)) {
+            monta_caminhos_absolutos_arquivo($value, $caminhos_absolutos, $currentPrefix);
+        } elseif (is_scalar($value) || is_null($value)) {
+            $caminhos_absolutos[] = $currentPrefix;
+        }
+    }
+}

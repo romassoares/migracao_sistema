@@ -1,15 +1,14 @@
 <?php
 require_once __DIR__ . '/../core/includes.php';
 
+set_time_limit(5000);
+
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
-
 $db = new DB();
-
-
 
 function index()
 {
@@ -170,9 +169,11 @@ function lerArquivoCsv($colunas, $arquivos, $modelo)
  */
 function processaArquivo($data)
 {
-    global $layout_colunas_depara;
+    global $layout_colunas_depara, $spreadsheet, $spreadsheetCriticas, $spreadsheetCertos, $sheet, $sheetCriticas, $sheetCertos, $ifExistErro;
 
     if (ob_get_length()) ob_end_clean();
+
+    ini_set('memory_limit', '512M');
 
     // Busca modelo
     $sql = "SELECT *, l.nome 
@@ -180,31 +181,70 @@ function processaArquivo($data)
             LEFT JOIN tipos_arquivos AS t ON m.id_tipo_arquivo = t.id_tipo_arquivo
             LEFT JOIN layout AS l ON m.id_layout = l.id
             LEFT JOIN concorrentes AS c ON m.id_concorrente = c.id
+            LEFT JOIN arquivos AS a ON m.id_modelo = a.id_modelo
             WHERE m.id_modelo = " . intval($data['id_modelo']) . " and m.id_layout = " . intval($data['id_layout']) . " and m.id_concorrente = " . intval($data['id_concorrente']) . " and m.id_tipo_arquivo = " . intval($data['id_tipo_arquivo']);
-
     $modelo = metodo_get($sql, 'migracao');
-
-    $layout_colunas_depara = metodo_all("SELECT l_depara.conteudo_de,l_depara.Conteudo_para_livre,l_depara.substituir, l_col_conteu.conteudo AS conteudo_layout, l_col_conteu.descricao as descricao_coluna
-                                FROM layout_colunas AS l_col
-                                LEFT JOIN layout_coluna_conteudos AS l_col_conteu USING(id) 
-                                LEFT JOIN layout_coluna_depara AS l_depara ON l_col_conteu.id = l_depara.id_layout_coluna
-                                WHERE id_layout =" . intval($data['id_layout']) . " 
-                                ORDER BY posicao", 'migracao');
 
     $modelo_colunas = metodo_all("SELECT * FROM modelos_colunas 
                                   WHERE id_modelo = {$data['id_modelo']} 
                                   ORDER BY posicao_coluna", 'migracao');
 
+
+    $result = metodo_all("SELECT 
+                            l_col.id_layout,
+                            l_col.id AS id_coluna,
+                            l_col.posicao,
+                            l_col.tipo,
+                            l_col.obrigatorio,
+                            l_col.nome_exibicao,
+                            l_depara.conteudo_de,
+                            l_depara.Conteudo_para_livre,
+                            l_depara.substituir
+                        FROM layout_colunas AS l_col
+                        LEFT JOIN layout_coluna_depara AS l_depara 
+                            ON l_col.id = l_depara.id_layout_coluna
+                        WHERE l_col.id_layout = " . intval($data['id_layout']) . "
+                        ORDER BY l_col.posicao, l_col.id, l_depara.conteudo_de 
+                        ", 'migracao');
+    $dados = [];
+    $layout_colunas = [];
+
+    foreach ($result as $row) {
+        $id_coluna = $row['id_coluna'];
+        $layout_colunas[$row['posicao']] = $row['nome_exibicao'];
+
+        if (!isset($dados[$id_coluna])) {
+            $dados[$id_coluna] = [
+                'id_layout'   => $row['id_layout'],
+                'posicao'     => $row['posicao'],
+                'tipo'        => $row['tipo'],
+                'obrigatorio' => $row['obrigatorio'],
+                'depara'      => []
+            ];
+        }
+
+        // Se existe registro de depara, adiciona no subarray
+        if (!empty($row['conteudo_de'])) {
+            $dados[$id_coluna]['depara'][] = [
+                'conteudo_de'         => $row['conteudo_de'],
+                'Conteudo_para_livre' => $row['Conteudo_para_livre'],
+                'substituir'          => $row['substituir']
+            ];
+        }
+    }
+
+    $layout_colunas_depara = array_values($dados);
+
     $arquivo = metodo_get("SELECT * FROM arquivos 
                             WHERE id_modelo = " . intval($data['id_modelo']) . " 
                               AND id_cliente = " . $_SESSION['company']['id'] . " 
-                            LIMIT 1", 'migracao');
+                              LIMIT 1", 'migracao');
+
 
     $arq_cli = "./assets/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/{$modelo->id_modelo}/{$arquivo->nome_arquivo}";
     if (!file_exists($arq_cli)) die('Arquivo não encontrado.');
 
     $extension_file = pathinfo($arquivo->nome_arquivo, PATHINFO_EXTENSION);
-
 
     $sql = "UPDATE arquivos SET status = ? WHERE id_cliente = ? and id_modelo = ?";
     insert_update($sql, "sii", ['P', $arquivo->id_cliente, $arquivo->id_modelo], 'migracao');
@@ -219,9 +259,99 @@ function processaArquivo($data)
     $spreadsheet = new Spreadsheet();
     $sheet = $spreadsheet->getActiveSheet();
 
-    // Processa o array para excel
-    processaArrayForExcel($modelo_colunas, $dados, $headers, $spreadsheet, $sheet, $modelo);
+    $spreadsheetCriticas = new Spreadsheet();
+    $sheetCriticas = $spreadsheetCriticas->getActiveSheet();
 
+    $spreadsheetCertos = new Spreadsheet();
+    $sheetCertos = $spreadsheetCertos->getActiveSheet();
+
+    // Processa o array para excel
+    $columnsUsed = setHeaderAndRetornColumns($modelo_colunas, $dados, $headers, $modelo,  $layout_colunas, $ifExistErro);
+
+    // Pega a primeira coluna como chave para identificar duplicatas
+    $colunaChave1 = $columnsUsed[0]['keys'] ?? null;
+    // dd($colunaChave1);
+    // ---------- Otimização: Processa grupos únicos para reduzir memória ----------
+    $batchSize = 100; // Tamanho do lote de limpeza de memória
+    $rowIndex = 2;
+    $rowIndexCriticado = 2; // Começa a escrever na linha 2 (linha 1 é cabeçalho)
+    $rowIndexCorreto = 2; // Começa a escrever na linha 2 (linha 1 é cabeçalho)
+    $processedCount = 0;
+    $gruposUnicos = [];
+
+    $rowsRemoveCriticado = [];
+    $rowsRemoveCorreto = [];
+
+    // Agrupa dados únicos pela primeira coluna
+    foreach ($dados as $key => $row) {
+        $valor1 = $colunaChave1 ? getNestedValue($row, $colunaChave1) : '';
+        $chaveGrupo = is_array($valor1) ? implode(',', $valor1) : (string)$valor1;
+        if (!isset($gruposUnicos[$chaveGrupo . '_' . $key])) {
+            $gruposUnicos[$chaveGrupo . '_' . $key] = $row;
+        }
+        $processedCount++;
+        if ($processedCount % 1000 === 0) {
+            gc_collect_cycles(); // Limpa memória a cada 1000 registros
+        }
+    }
+
+    // ---------- Escreve os grupos únicos na planilha ----------
+    $processedCount = 0;
+    foreach ($gruposUnicos as $row) {
+        $rowIndex = writeRowRecursive($row, $columnsUsed, $rowIndex, $ifExistErro);
+
+        if ($ifExistErro) {
+            $rowsRemoveCorreto[] = $rowIndex - 1;
+        } else {
+            $rowsRemoveCriticado[] = $rowIndex - 1;
+        }
+
+        $ifExistErro = false;
+
+        $processedCount++;
+        if ($processedCount % $batchSize === 0) {
+            $spreadsheet->garbageCollect();
+            gc_collect_cycles();
+        }
+    }
+
+    foreach (array_reverse($rowsRemoveCriticado) as $rowNum) {
+        $sheetCriticas->removeRow($rowNum);
+    }
+
+    foreach (array_reverse($rowsRemoveCorreto) as $rowNum) {
+        $sheetCertos->removeRow($rowNum);
+    }
+
+    // ---------- Salva arquivo ----------
+    $destinoDir = __DIR__ . "/../../assets/convertidos/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/";
+    if (!is_dir($destinoDir) && !mkdir($destinoDir, 0755, true)) {
+        throw new \RuntimeException("Não foi possível criar pasta de destino: {$destinoDir}");
+    }
+    // Gera nome do arquivo com timestamp
+    $caminhoFinal = $destinoDir . $_SESSION['company']['nome'] . '_' . $modelo->nome_modelo . "_" . $modelo->id_modelo . "_Todos.xlsx";
+
+    // Salva arquivo com todos os registros
+    $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+    $writer->setPreCalculateFormulas(false);
+    $writer->save($caminhoFinal);
+
+    if (!filesize($caminhoFinal)) {
+        throw new \RuntimeException("Falha ao salvar arquivo: {$caminhoFinal}");
+    }
+
+    // salva arquivo com as criticas;
+    $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheetCriticas);
+    $writer->setPreCalculateFormulas(false);
+    $writer->save($destinoDir . $_SESSION['company']['nome'] . '_' . $modelo->nome . "_" . $modelo->id_modelo . "_Criticados.xlsx");
+
+    // salva arquivo com os erros
+    $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheetCertos);
+    $writer->setPreCalculateFormulas(false);
+    $writer->save($destinoDir . $_SESSION['company']['nome'] . '_' . $modelo->nome . "_" . $modelo->id_modelo . "_Corretos.xlsx");
+
+    unset($spreadsheet, $writer, $gruposUnicos);
+    gc_collect_cycles();
 
     return return_api(200, '', $arquivo->status);
 }

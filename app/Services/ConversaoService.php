@@ -45,7 +45,6 @@ class ConvertService
             $converted = $this->conversor_class->convert($tmpFile);
 
             return $converted;
-
         } else {
             die("arquivo não é do tipo esperado no modelo");
         }
@@ -79,20 +78,20 @@ class ConvertService
     public static function aplicarDePara($valor, $colName, $deparas)
     {
         // Caso não tenha deparas, retorna o valor original
-        if(empty($deparas)) return $valor;
+        if (empty($deparas)) return $valor;
 
         $valor_retorno = $valor;
         // Pega apenas os deparas que correspondem a coluna
-        $itensFiltrados = array_filter($deparas, function($item) use ($colName) {
+        $itensFiltrados = array_filter($deparas, function ($item) use ($colName) {
             return $item['descricao_coluna'] === $colName;
         });
 
         foreach ($itensFiltrados as $depara) {
             $conteudo_de = $depara['conteudo_de'];
             $conteudo_para = $depara['Conteudo_para_livre'];
-            
 
-            if($depara['substituir'] == 1 && preg_match(strtolower("/$conteudo_de/"), strtolower($valor))) {
+
+            if ($depara['substituir'] == 1 && preg_match(strtolower("/$conteudo_de/"), strtolower($valor))) {
                 $valor_retorno = str_replace($conteudo_de, $conteudo_para, $valor);
             } else if ($depara['substituir'] == 0 && $conteudo_de == $valor) {
                 $valor_retorno = $conteudo_para;

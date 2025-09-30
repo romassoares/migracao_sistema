@@ -1,5 +1,6 @@
 <?php
 
+include_once __DIR__ . '/log.php';
 include_once __DIR__ . '/load_env.php';
 include_once __DIR__ . '/methods.php';
 include_once __DIR__ . '/functions.php';

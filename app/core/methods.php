@@ -3,6 +3,7 @@ include_once __DIR__ . '/../../database/db.php';
 
 $db = new DB();
 
+
 // -------------------------------------------------------------------------------
 function metodo_get($sql, $database)
 {
@@ -10,8 +11,10 @@ function metodo_get($sql, $database)
 
     $query = $db->connect($database)->query($sql);
 
-    if ($query === false)
+    if ($query === false) {
+        writeInFileLog($sql);
         die(strval($db->connect($database)->error));
+    }
 
     return (object) $query->fetch_assoc();
 }
@@ -23,8 +26,10 @@ function metodo_all($sql, $database)
 
     $query = $db->connect($database)->query($sql);
 
-    if ($query === false)
+    if ($query === false) {
+        writeInFileLog($sql);
         die(strval($db->connect($database)->error));
+    }
 
     return $query->fetch_all(MYSQLI_ASSOC);
 }
@@ -38,8 +43,12 @@ function insert_update($sql, $binds, $data, $database)
 
     $stmt = $conn->prepare($sql);
 
-    if (!$stmt)
+    if (!$stmt) {
+        writeInFileLog($sql);
+        writeInFileLog($binds);
+        writeInFileLog($data);
         die('Failed to prepare statement in insert or update: ' . $conn->error);
+    }
 
     $params = [];
     foreach ($data as &$value)

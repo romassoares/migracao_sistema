@@ -1,5 +1,19 @@
 <?php
+require_once(__DIR__ . '/../Controller/ArquivoController.php');
+
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+
 $layout_colunas_depara = [];
+$spreadsheet = new stdClass();
+$spreadsheetCriticas = new stdClass();
+$spreadsheetCertos = new stdClass();
+$sheet = new stdClass();
+$sheetCriticas = new stdClass();
+$sheetCertos = new stdClass();
+
+// $debug = false;
+
+
 /**
  * Função principal que orquestra o processo de exportação dos dados para Excel.
  * Ela:
@@ -8,28 +22,31 @@ $layout_colunas_depara = [];
  *  - Escreve os dados na planilha.
  *  - Salva o arquivo em disco.
  */
-function processaArrayForExcel($modelo_colunas, $dados, $headers, $spreadsheet, $sheet, $modelo)
+function setHeaderAndRetornColumns($modelo_colunas, $dados, $headers, $modelo,  $layout_colunas, $ifExistErro)
 {
-    // ---------- Mapeia colunas do modelo para as colunas disponíveis nos headers ----------
-    $i = 1; // Contador de colunas
+    global $spreadsheet, $sheet, $sheetCriticas, $sheetCertos, $layout_colunas_depara;
+
+    // Contador de colunas
     $columnsUsed = []; // Colunas que serão efetivamente usadas
+    // dd($modelo_colunas);
     foreach ($modelo_colunas as $mc) {
         $descricao_coluna = $mc['descricao_coluna'];
+
         // Só usa a coluna se ela existir nos headers de origem
         if (in_array($descricao_coluna, $headers, true)) {
-            // Divide nomes hierárquicos (ex: cliente.nome -> ['cliente','nome'])
-            $keys = array_filter(explode('.', $descricao_coluna), 'strlen');
+            // Divide nomes hierárquicos (ex: cliente/nome -> ['cliente','nome'])
+            $keys = array_filter(explode('/', $descricao_coluna), 'strlen');
             $columnsUsed[] = [
                 'header' => $descricao_coluna,
                 'keys'   => array_values($keys), // Caminho de chaves para acessar no array de dados
-                'col'    => $i, // Índice numérico da coluna
+                'col'    => $mc['posicao_coluna'], // Índice numérico da coluna
             ];
-            // Escreve o cabeçalho na planilha
-            setCellValueByColumnAndRow($sheet, $i, 1, $descricao_coluna);
-            $i++;
         }
     }
 
+    foreach ($layout_colunas as $key => $coluna) {
+        setCellValueByColumnAndRow($key, 1, $coluna, false);
+    }
     // Caso nenhuma coluna seja compatível, encerra com erro
     if (!$columnsUsed) {
         if (ob_get_length()) ob_end_clean();
@@ -37,93 +54,8 @@ function processaArrayForExcel($modelo_colunas, $dados, $headers, $spreadsheet, 
         exit("Nenhuma coluna do modelo corresponde aos headers do arquivo.");
     }
 
-    // Pega a primeira coluna como chave para identificar duplicatas
-    $colunaChave1 = $columnsUsed[0]['keys'] ?? null;
-
-    // ---------- Otimização: Processa grupos únicos para reduzir memória ----------
-    $batchSize = 100; // Tamanho do lote de limpeza de memória
-    $rowIndex = 2; // Começa a escrever na linha 2 (linha 1 é cabeçalho)
-    $processedCount = 0;
-    $gruposUnicos = [];
-
-    // Agrupa dados únicos pela primeira coluna
-    foreach ($dados as $row) {
-        $valor1 = $colunaChave1 ? getNestedValue($row, $colunaChave1) : '';
-        $chaveGrupo = is_array($valor1) ? implode(',', $valor1) : (string)$valor1;
-        if (!isset($gruposUnicos[$chaveGrupo])) {
-            $gruposUnicos[$chaveGrupo] = $row;
-        }
-        $processedCount++;
-        if ($processedCount % 1000 === 0) {
-            gc_collect_cycles(); // Limpa memória a cada 1000 registros
-        }
-    }
-
-    // ---------- Escreve os grupos únicos na planilha ----------
-    $processedCount = 0;
-    foreach ($gruposUnicos as $row) {
-
-        $rowIndex = writeRowRecursive($sheet, $row, $columnsUsed, $rowIndex);
-        $processedCount++;
-        if ($processedCount % $batchSize === 0) {
-            $spreadsheet->garbageCollect();
-            gc_collect_cycles();
-        }
-    }
-
-    // ---------- Salva arquivo ----------
-    salvaArquivosExcel($spreadsheet, $modelo);
-
-    return;
+    return $columnsUsed;
 }
-
-
-/**
- * Salva a planilha em disco no formato XLSX.
- */ function salvaArquivosExcel($spreadsheet, $modelo)
-{
-    global $layout_colunas_depara;
-
-    // dd($layout_colunas_depara);
-    // Cria pasta de destino se não existir
-    $destinoDir = __DIR__ . "/../../assets/convertidos/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/";
-    if (!is_dir($destinoDir) && !mkdir($destinoDir, 0755, true)) {
-        throw new \RuntimeException("Não foi possível criar pasta de destino: {$destinoDir}");
-    }
-    // Gera nome do arquivo com timestamp
-    $caminhoFinal = $destinoDir . "arquivos_" . date("Ymd_His") . ".xlsx";
-
-    // Salva arquivo com todos os registros
-    $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-    $writer->setPreCalculateFormulas(false);
-    $writer->save($caminhoFinal);
-
-    if (!filesize($caminhoFinal)) {
-        throw new \RuntimeException("Falha ao salvar arquivo: {$caminhoFinal}");
-    }
-
-
-
-
-    // salva arquivo com as criticas
-
-
-
-
-
-
-    // salva arquivo com os erros
-
-
-
-
-
-    unset($spreadsheet, $writer, $gruposUnicos);
-    gc_collect_cycles();
-
-    return;
-}
-
 
 /**
  * Escreve dados recursivamente, lidando com arrays aninhados e listas.
@@ -131,13 +63,11 @@ function processaArrayForExcel($modelo_colunas, $dados, $headers, $spreadsheet, 
  * - Usa produto cartesiano para listas.
  * - Evita linhas duplicadas.
  */
-function writeRowRecursive($sheet, $data, $columnsUsed, $rowIndex, $prefix = [], $fixedValues = [], &$lastRowValues = [])
+function writeRowRecursive($data, $columnsUsed, $rowIndex, $ifExistErro, $prefix = [], $fixedValues = [], &$lastRowValues = [])
 {
     // Preenche valores escalares do nível atual
-
     $total_colunas_por_linha = count($columnsUsed);
     foreach ($columnsUsed as $c) {
-
         if (
             count($c['keys']) === count($prefix) + 1 &&
             array_slice($c['keys'], 0, count($prefix)) === $prefix
@@ -153,60 +83,40 @@ function writeRowRecursive($sheet, $data, $columnsUsed, $rowIndex, $prefix = [],
     // Separa listas e objetos aninhados
     $listas = [];
     $objetos = [];
-    // $keysQuebram = ['image', 'foto', 'feature']; // personalize
-
-    $debug = false;
-
 
     foreach ($data as $k => $v) {
-
         if (is_array($v) && (array_keys($v) === range(0, count($v) - 1))) {
             $listas[$k] = $v;
         } elseif (is_array($v)) {
-
-
             $objetos[$k] = $v;
         }
     }
-
-    // if ($debug) {
-    //     var_dump($listas, $objetos);
-    //     die;
-    // }
 
     // Processa listas com produto cartesiano
     if ($listas) {
         $combos = cartesianProduct($listas);
         foreach ($combos as $combo) {
-
             $rowVals = $fixedValues;
             $filhoEscreveu = false;
 
             foreach ($combo as $chaveLista => $valorLista) {
-                // if (strtolower($chaveLista) == 'features') {
-                //     echo 'listas';
-                //     var_dump($chaveLista, $valorLista, $listas);
-                //     die;
-                // }
                 if (is_scalar($valorLista) || $valorLista === null) {
-
                     $col = findColumnIndex($columnsUsed, array_merge($prefix, [$chaveLista]));
                     if ($col) {
                         $rowVals[$col] = safeToString($valorLista);
                     }
-                } else {
-
-                    // Valor é objeto aninhado, processa recursivamente
+                } else { // Valor é objeto aninhado, processa recursivamente
                     $antes = $rowIndex;
-                    $rowIndex = writeRowRecursive(
-                        $sheet,
+                    $rowResponse = writeRowRecursive(
                         $valorLista,
                         $columnsUsed,
                         $rowIndex,
+                        $ifExistErro,
                         array_merge($prefix, [$chaveLista]),
                         $rowVals,
                         $lastRowValues
                     );
+                    $rowIndex = $rowResponse;
                     if ($rowIndex > $antes) $filhoEscreveu = true;
                 }
             }
@@ -215,9 +125,8 @@ function writeRowRecursive($sheet, $data, $columnsUsed, $rowIndex, $prefix = [],
 
             // Evita duplicação
             if ($rowVals !== $lastRowValues && count($rowVals) == $total_colunas_por_linha) {
-
                 foreach ($rowVals as $col => $valor) {
-                    setCellValueByColumnAndRow($sheet, $col, $rowIndex, $valor);
+                    setCellValueByColumnAndRow($col, $rowIndex, $valor, $ifExistErro);
                 }
                 $lastRowValues = $rowVals;
                 $rowIndex++;
@@ -229,24 +138,17 @@ function writeRowRecursive($sheet, $data, $columnsUsed, $rowIndex, $prefix = [],
     // Processa objetos associativos
     if ($objetos) {
         $antes = $rowIndex;
-
         foreach ($objetos as $chObj => $objVal) {
-
-            // if (strtolower($chObj) == 'features') {
-            //     echo 'objetos';
-            //     var_dump($chObj, 'teste', $objVal, 'teste', $objetos);
-            //     die;
-            // }
-
-            $rowIndex = writeRowRecursive(
-                $sheet,
+            $rowResponse = writeRowRecursive(
                 $objVal,
                 $columnsUsed,
                 $rowIndex,
+                $ifExistErro,
                 array_merge($prefix, [$chObj]),
                 $fixedValues,
                 $lastRowValues
             );
+            $rowIndex = $rowResponse;
         }
         if ($rowIndex > $antes) {
             return $rowIndex;
@@ -257,7 +159,7 @@ function writeRowRecursive($sheet, $data, $columnsUsed, $rowIndex, $prefix = [],
         }
         if ($rowVals !== $lastRowValues  && count($rowVals) == $total_colunas_por_linha) {
             foreach ($rowVals as $col => $valor) {
-                setCellValueByColumnAndRow($sheet, $col, $rowIndex, $valor);
+                setCellValueByColumnAndRow($col, $rowIndex, $valor, $ifExistErro);
             }
             $lastRowValues = $rowVals;
             $rowIndex++;
@@ -265,14 +167,11 @@ function writeRowRecursive($sheet, $data, $columnsUsed, $rowIndex, $prefix = [],
         return $rowIndex;
     }
 
-    if (count($fixedValues)) {
-        // var_dump($fixedValues, $lastRowValues, $total_colunas_por_linha);
-        // die();
-    }
+
     // Caso final: linha simples, sem listas nem objetos
     if ($fixedValues !== $lastRowValues && count($fixedValues) == $total_colunas_por_linha) {
         foreach ($fixedValues as $col => $valor) {
-            setCellValueByColumnAndRow($sheet, $col, $rowIndex, $valor);
+            setCellValueByColumnAndRow($col, $rowIndex, $valor, $ifExistErro);
         }
         $lastRowValues = $fixedValues;
         $rowIndex++;
@@ -340,8 +239,9 @@ function findColumnIndex($columnsUsed, $keys)
 /**
  * Wrapper para setar valores em células com índice numérico (coluna/linha).
  */
-function setCellValueByColumnAndRow($sheet, $colIndex, $rowIndex, $value)
+function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
 {
+    global $layout_colunas_depara, $spreadsheetCriticas, $spreadsheetCertos, $spreadsheet, $sheetCriticas, $sheetCertos, $sheet, $ifExistErro;
 
     if ($rowIndex < 1) {
         throw new \InvalidArgumentException("Row index inválido: $rowIndex");
@@ -351,16 +251,153 @@ function setCellValueByColumnAndRow($sheet, $colIndex, $rowIndex, $value)
     }
     $cell = columnLetter($colIndex) . $rowIndex;
 
-    // if ($rowIndex != 1) {
-    //     var_dump('antes do inserir no cell');
-    // }
+    $valueCriticado = "";
+    $valueCorreto = "";
+    $valueTodos = "";
 
-    $sheet->setCellValue($cell, $value);
+    // writeInFileLog($value);
 
-    // if ($rowIndex != 1) {
-    //     var_dump($sheet->getCell($cell)->getValue());
-    //     die;
-    // }
+    if (intval($rowIndex) > 1) {
+        foreach ($layout_colunas_depara as $depara) {
+
+            if (intval($depara['posicao']) == $colIndex) {
+                if (strtolower($depara['tipo']) == 'livre' || empty($depara['tipo'])) {
+                    $value = strip_tags($value);
+                    $value = RemoveStrangeCharacter($value);
+                    $valueCorreto = $value;
+                    $valueTodos = $value;
+                    break;
+                }
+
+                if ($depara['tipo'] == 'numerico') {
+                    $value = preg_replace('/[^\d,-]/', '', $value);
+                    $value = str_replace(',', '.', $value);
+                    if (!is_numeric($value)) {
+                        $valueCriticado = $value . 'Critica: Não é numérico';
+                        $valueTodos = $value;
+                        $ifExistErro = true;
+                        break;
+                    } else {
+                        $valueCorreto = $value;
+                        $valueTodos = $value;
+                        break;
+                    }
+                }
+
+                if ($depara['tipo'] == 'data') {
+                    $formatos = [
+                        'd/m/Y',
+                        'Y-m-d',
+                        'd-m-Y',
+                        'm-d-Y',
+                        'd.m.Y',
+                        'Y.m.d',
+                        'd M Y',
+                        'M d, Y',
+                        'd/m/Y H:i',
+                        'd/m/Y H:i:s',
+                        'Y-m-d H:i',
+                        'Y-m-d H:i:s',
+                    ];
+
+                    $date = false;
+                    foreach ($formatos as $formato) {
+                        $d = DateTime::createFromFormat($formato, $value);
+                        if ($d && $d->format($formato) === $value) {
+                            $date = $d;
+                            break;
+                        }
+                    }
+
+                    if ($date) {
+                        $valueTodos = $date->format('Y-m-d');
+                        $valueCorreto = $value;
+                        break;
+                    } else {
+                        $valueCriticado = $value . 'Critica: Formato data inválido';
+                        $valueTodos = $value;
+                        $ifExistErro = true;
+                        break;
+                    }
+                }
+
+                if ($depara['tipo'] == 'email') {
+                    if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                        $valueCriticado = $value . 'Critica: Email inválido';
+                        $valueTodos = $value;
+                        $ifExistErro = true;
+                        break;
+                    } else {
+                        $valueCorreto = $value;
+                        $valueTodos = $value;
+                        break;
+                    }
+                }
+
+                if ($depara['tipo'] == 'telefone') {
+                    if (!preg_match('/^\+?[0-9\s\-\(\)]+$/', $value)) {
+                        $valueCriticado = $value . 'Critica: Telefone inválido';
+                        $valueTodos = $value;
+                        $ifExistErro = true;
+                        break;
+                    } else {
+                        $valueCorreto = $value;
+                        $valueTodos = $value;
+                        break;
+                    }
+                }
+
+                if ($depara['tipo'] == 'sim_nao') {
+                    $valores_aceitos = ['sim', 'não', 'nao', 's', 'n', '1', '0', 'true', 'false', 'verdadeiro', 'falso'];
+                    if (!in_array(strtolower(trim($value)), $valores_aceitos)) {
+                        $valueCriticado = $value . 'Critica: Valor inválido (Sim/Não)';
+                        $valueTodos = $value;
+                        $ifExistErro = true;
+                        break;
+                    } else {
+                        $valueCorreto = $value;
+                        $valueTodos = $value;
+                        break;
+                    }
+                }
+
+                if (strtolower($depara['tipo']) == 'flag' && count($depara['depara']) > 0) {
+                    $mapa = [];
+
+                    foreach ($depara['depara'] as $m) {
+                        if ($value == $m['conteudo_de'] && $m['substituir'] == '1') {
+                            $mapa[strtolower(trim($m['conteudo_de']))] = $m['Conteudo_para_livre'];
+                            break;
+                        }
+                    }
+
+                    $key = strtolower(trim($value));
+                    if (isset($mapa[$key])) {
+                        $valueCorreto = $mapa[$key];
+                        $valueTodos = $mapa[$key];
+                        break;
+                    } else {
+                        $valueCriticado = $value . 'Critica: Valor não mapeado';
+                        $valueTodos = $value;
+                        $ifExistErro = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    if ($rowIndex == 1) {
+        $valueCorreto = $value;
+        $valueCriticado = $value;
+        $valueTodos = $value;
+    }
+
+    $sheetCriticas->setCellValue($cell, $valueCriticado);
+    $sheetCertos->setCellValue($cell, $valueCorreto);
+    $sheet->setCellValue($cell, $valueTodos);
+
+    return;
 }
 
 /**
@@ -399,6 +436,7 @@ function safeToString($v): string
  */
 function getNestedValue($row, $keys)
 {
+
     $current = $row;
     foreach ($keys as $key) {
         if (is_array($current)) {
@@ -407,6 +445,7 @@ function getNestedValue($row, $keys)
                 $temp = [];
                 foreach ($current as $item) {
                     $val = getNestedValue($item, [$key]);
+
                     if ($val !== null) {
                         $temp[] = $val;
                     }
@@ -418,6 +457,7 @@ function getNestedValue($row, $keys)
                 return null;
             }
             // Caso de array associativo
+
             if (array_key_exists($key, $current)) {
                 $current = $current[$key];
                 continue;
