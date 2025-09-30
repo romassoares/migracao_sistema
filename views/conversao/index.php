@@ -12,7 +12,7 @@
     }
 </style>
 
-<div class="card col-12">
+<div class="card col-12" id="bodyConversao">
     <div class="card-header">Conversão</div>
     <div class="card-body">
         <div class="d-flex">
@@ -81,7 +81,7 @@
     </div>
 </div>
 </div>
-<img id="load" style="display:none" class="loader" src="../../views/assets/imgload.svg" alt="">
+<img id="load" src="../../views/assets/imgload.svg" alt="">
 <!--  -->
 <div class="modal fade" id="modal_novo_modelo">
     <div class="modal-dialog modal-md">

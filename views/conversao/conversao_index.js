@@ -8,7 +8,6 @@ var id_arquivo = ""
 var id_layout = ""
 var id_tipo_arquivo = ""
 
-
 $(document).ready(function () {
     $('#input_layout_coluna').select2({
         theme: "bootstrap-5",
@@ -22,16 +21,14 @@ $(document).ready(function () {
     });
 
     if (modelo.id_concorrente) {
-
+        load(true)
         document.querySelector("#btn_processa_arquivo").className = 'd-flex col mt-2'
-        document.querySelector("#load").style.display = 'block'
+        // document.querySelector("#load").style.display = 'block'
         dispararEventoEmSelect(document.querySelector("#concorrente_id"), modelo.id_concorrente)
 
         setTimeout(() => {
             dispararEventoEmSelect(document.querySelector("#modelo_id"), modelo.id_modelo)
         }, 1000)
-
-
 
         setTimeout(async () => {
             var resultado = await method_post('/conversao/EditVinculacaoArquivo', {
@@ -41,8 +38,7 @@ $(document).ready(function () {
                 id_tipo_arquivo: modelo.id_tipo_arquivo,
                 id_arquivo: id_arquivo
             })
-
-
+            load(false)
             id_layout = modelo.id_layout
             id_tipo_arquivo = modelo.id_tipo_arquivo
 
@@ -52,9 +48,6 @@ $(document).ready(function () {
             if (modelo.status == 'P') {
                 existeArquivoProcessado()
             }
-
-
-            // console.log(modelo)
 
             convertidosHeaders = Object.values(resultado.data.arquivo_convertido[0])
             if (modelo.descr_tipo_arquivo == "xml" || modelo.descr_tipo_arquivo == "json" || modelo.descr_tipo_arquivo == "xlsx") {
@@ -87,13 +80,33 @@ $(document).ready(function () {
                 el_select.onchange = oldOnChange;
             });
             atualizaColunas()
-            document.querySelector("#load").style.display = 'none'
+            // document.querySelector("#load").style.display = 'none'
             // }, 500)
         }, 1000)
+        // load(false);
     } else {
         document.querySelector("#div_btn_upload_arquivo").className = 'd-flex col mt-2'
+        // load(false)
     }
 });
+
+function load(value) {
+    // let stack = new Error().stack;
+    // console.log(stack)
+
+    // const container = document.querySelector('#bodyConversao');
+    // const elements = container.querySelectorAll('input, select, textarea, button');
+
+    if (value == true) {
+        // elements.forEach(el => el.disabled = true);
+        document.querySelector('#load').className = 'd-flex loader'
+    } else {
+        setTimeout(() => {
+            // elements.forEach(el => el.disabled = false);
+            document.querySelector('#load').className = 'd-none'
+        }, 1000)
+    }
+}
 
 function existeArquivoProcessado() {
     let div_btn_processados_arquivo = document.querySelector("#div_btn_processados_arquivo")
@@ -149,6 +162,7 @@ function mudaNomeModelo(layout_text) {
 
 document.querySelector("#modelo_id").addEventListener("change", function (e) {
     e.preventDefault()
+    load(true)
     const selectedOption = this.options[this.selectedIndex];
     document.querySelector("#tipoArquivoInputGroup").textContent = selectedOption.getAttribute('descr_tipo_arquivo')
 
@@ -156,6 +170,7 @@ document.querySelector("#modelo_id").addEventListener("change", function (e) {
     var accepts = tipo == 'xlsx' ? '.xlsx, .xls' : '.' + tipo
     document.querySelector("#arquivo").setAttribute('accept', accepts)
     habilitaDesabilitaModelo(true)
+    load(false)
 })
 
 function habilitaDesabilitaModelo(action) {
@@ -193,7 +208,7 @@ document.querySelector("#concorrente_id").addEventListener('change', async funct
 
 document.querySelector("#id_form_modelo").addEventListener("submit", async function (e) {
     e.preventDefault()
-
+    load(true)
     var value_input_nome = document.querySelector("#nome_modelo_modal").value
     var value_input_layout_id = document.querySelector("#layout_id").value
     var value_id_concorrente = document.querySelector("#concorrente_id").value
@@ -217,6 +232,8 @@ document.querySelector("#id_form_modelo").addEventListener("submit", async funct
         alert(errors)
         return
     }
+
+    id_layout = value_input_layout_id
 
     try {
         var resultado = await method_post('/modelos/store', {
@@ -245,7 +262,9 @@ document.querySelector("#id_form_modelo").addEventListener("submit", async funct
             el_modelo.disabled = true
             $('#modal_novo_modelo').modal('hide')
         }
+        load(false)
     } catch (error) {
+        load(false)
         alert(error)
     }
 })
@@ -253,9 +272,9 @@ document.querySelector("#id_form_modelo").addEventListener("submit", async funct
 
 document.querySelector("#id_form_upload_arquivo").addEventListener('submit', async function (e) {
     e.preventDefault()
+    load(true)
     document.querySelector("#div_upload_arquivo").className = 'd-none'
     document.querySelector("#btn_processa_arquivo").className = 'd-flex col mt-2'
-    document.querySelector("#load").style.display = 'block'
 
     var modelo_id = document.querySelector("#modelo_id").value
     var arquivo = document.querySelector("#arquivo")
@@ -284,17 +303,17 @@ document.querySelector("#id_form_upload_arquivo").addEventListener('submit', asy
 
             // window.location.href = "/conversao/index?id_modelo=" + modelo.id_modelo;
 
-
             montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, convertidosHeaders)
-
         }
+        load(false)
     } catch (error) {
+        load(false);
         alert(error)
     }
-    document.querySelector("#load").style.display = 'none'
 })
 
 function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, convertidosHeaders) {
+    load(true)
     document.querySelector("#div_arquivo_convertido").className = 'd-flex'
 
     const div_container = document.querySelector("#div_arquivo_convertido")
@@ -462,10 +481,12 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
             div_row.appendChild(div_col)
         })
         div_container.appendChild(div_row)
+        load(false)
     } else {
+        load(false)
         alert('Nenhum header encontrado em convertidosHeaders')
     }
-    document.querySelector("#load").style.display = 'none'
+    // document.querySelector("#load").style.display = 'none'
 }
 
 const getValue = (row, header) => {
@@ -501,6 +522,7 @@ const getValue = (row, header) => {
 };
 
 function atualizaColunas() {
+    load(true)
     const allSelects = document.querySelectorAll('select[id^="select_layout_coluna_"]');
 
     const valoresSelecionados = Array.from(allSelects)
@@ -528,6 +550,7 @@ function atualizaColunas() {
             width: '100%',
         });
     });
+    load(false)
 }
 
 function normalizaValor(value) {
@@ -559,7 +582,7 @@ function normalizaValor(value) {
 }
 
 async function salvaVinculacaoColunaConvetidoComLayoutColunas(select) {
-
+    load(true)
     const id_layout_coluna = select.value
     const id_ref_col = select.id.replace("select_layout_coluna_", '')
 
@@ -578,9 +601,11 @@ async function salvaVinculacaoColunaConvetidoComLayoutColunas(select) {
     //         alert(resultado.data.msg)
     // }
     atualizaTabelaComDePara(select);
+    load(false)
 }
 
 async function atualizaTabelaComDePara(select) {
+    load(true)
     const id_ref_col = select.id.replace("select_layout_coluna_", '');
     const tabela = document.querySelector('#tbl_valores_convertidos_header_' + id_ref_col);
     const valores = Array.from(tabela?.querySelectorAll('tbody tr td') || [])
@@ -602,9 +627,11 @@ async function atualizaTabelaComDePara(select) {
             tds[i].innerText = novos[i];
         }
     }
+    load(false)
 }
 
 async function removeColunaModelo(select, ol_value) {
+    load(true)
     const id_layout_coluna = select.value
     const id_ref_col = select.id.replace("select_layout_coluna_", '')
     var descricao_coluna = document.querySelector("#input_convertido_header_" + id_ref_col).value;
@@ -621,12 +648,13 @@ async function removeColunaModelo(select, ol_value) {
     //     if (resultado.data.msg !== '')
     //         alert(resultado.data.msg)
     // }
+    load(false)
 }
 
 
 async function processaArquivo() {
     document.querySelector("#div_upload_arquivo").className = 'd-none'
-    document.querySelector("#load").style.display = 'block'
+    load(true)
 
     var modelo_id = document.querySelector("#modelo_id").value
     var id_concorrente = document.querySelector("#concorrente_id").value
@@ -642,11 +670,11 @@ async function processaArquivo() {
         }
     }).then(response => {
         existeArquivoProcessado()
+        load(false)
     }).catch(error => {
+        load(false)
         console.error('Erro ao gerar Excel:', error);
     });
-
-    document.querySelector("#load").style.display = 'none'
 }
 
 
