@@ -28,19 +28,19 @@ class ConvertService
         if ($descr_tipo_arquivo == $extension_file) {
 
             if ($extension_file == 'xml')
-                $this->conversor_class = new XmlToArrayService();
+                $this->conversor_class = new XmlToArrayService($this->depara_rules);
 
             if ($extension_file == 'xlsx')
                 $this->conversor_class = new ExcelToArrayService($extension_file, $this->depara_rules);
 
             if ($extension_file == 'csv')
-                $this->conversor_class = new CsvToArrayService($extension_file);
+                $this->conversor_class = new CsvToArrayService($extension_file, $this->depara_rules);
 
             if ($extension_file == 'sql')
-                $this->conversor_class = new SqlToArrayService($extension_file);
+                $this->conversor_class = new SqlToArrayService($extension_file, $this->depara_rules);
 
             if ($extension_file == 'json')
-                $this->conversor_class = new JsonToArrayService($extension_file);
+                $this->conversor_class = new JsonToArrayService($extension_file, $this->depara_rules);
 
             $converted = $this->conversor_class->convert($tmpFile);
 

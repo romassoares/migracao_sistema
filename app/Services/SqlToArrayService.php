@@ -2,6 +2,13 @@
 
 class SqlToArrayService
 {
+    private $depara_rules;
+
+    function __construct($extensao, $depara_rules)
+    {
+        $this->depara_rules = $depara_rules;
+    }
+
     public function convert($arquivo)
     {
         $items = [];
@@ -36,17 +43,45 @@ class SqlToArrayService
             $i++;
             fclose($handle);
 
-            foreach ($items as $key => $item) {
-                $explode = [];
-                $explode = explode(",", $item);
-
-                for ($i = 0; count($explode) > $i; $i++)
-                    $explode[$i] = preg_replace('/^"(.*)"$/', '$1', $explode[$i]);
-
-                $items[$key] = $explode;
+            // Processa os headers (primeira linha)
+            $headers = [];
+            if (!empty($items[0])) {
+                $headers = explode(",", $items[0]);
+                array_walk($headers, function(&$header) {
+                    $header = trim($header);
+                });
             }
 
-            return $items;
+            // Cria caminhos absolutos
+            $caminhos_absolutos = [];
+            foreach ($headers as $col) {
+                if (!empty($col)) {
+                    $caminhos_absolutos[] = $col;
+                }
+            }
+
+            // Processa os valores com De/Para
+            $children = [];
+            for ($key = 1; $key < count($items); $key++) {
+                $values = explode(",", $items[$key]);
+                $record = [];
+                
+                foreach ($headers as $i => $colName) {
+                    if (!empty($colName) && isset($values[$i])) {
+                        // Remove aspas dos valores
+                        $value = preg_replace('/^"(.*)"$/', '$1', trim($values[$i]));
+                        // Aplica as regras de De/Para
+                        $valor = ConvertService::aplicarDePara($value, $colName, $this->depara_rules);
+                        $record[$colName] = $valor;
+                    }
+                }
+                
+                if (!empty($record)) {
+                    $children[] = $record;
+                }
+            }
+
+            return [$caminhos_absolutos, $children];
         } else {
             dd("error ao ler o arquivo");
         }
