@@ -455,6 +455,7 @@ function deletarDepara()
 
 function deparaSalvar()
 {
+
     $regras = [
         'id_layout_coluna' => ['required' => true, 'type' => 'int'],
         'id_modelo' => ['required' => true, 'type' => 'int'],
@@ -530,5 +531,7 @@ function deparaSalvar()
         }
     }
 
-    return ['view' => '', 'data' => [], 'function' => "index?id_modelo=" . $id_modelo];
+    $sql_modelo = "SELECT id_arquivo FROM arquivos WHERE id_modelo = $id_modelo and id_cliente =" . $_SESSION['company']['id'];
+    $modelo = metodo_get($sql_modelo, 'migracao');
+    return ['view' => '', 'data' => [], 'function' => "index?id_modelo=" . $id_modelo . "&id_arquivo=" . $modelo->id_arquivo];
 }
