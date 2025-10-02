@@ -4,6 +4,13 @@ include_once __DIR__ . '/../core/functions.php';
 
 class JsonToArrayService
 {
+    private $depara_rules;
+
+    function __construct($extensao, $depara_rules)
+    {
+        $this->depara_rules = $depara_rules;
+    }
+
     public function convert($arquivo)
     {
 
@@ -30,7 +37,7 @@ class JsonToArrayService
             return [];
         }
 
-        $conteudo = $this->converterObjetosParaArray($conteudo);
+        $conteudo = $this->converterObjetosParaArray($conteudo, '');
 
         $caminhos_absolutos = [];
         monta_caminhos_absolutos_arquivo($conteudo, $caminhos_absolutos);
@@ -41,14 +48,31 @@ class JsonToArrayService
         return [$headers, $conteudo];
     }
 
-    private function converterObjetosParaArray($data)
+    private function converterObjetosParaArray($data, $caminho = '')
     {
-        if (is_object($data))
+        if (is_object($data)) {
             $data = (array) $data;
+        }
 
         if (is_array($data)) {
-            foreach ($data as $key => $value)
-                $data[$key] = $this->converterObjetosParaArray($value);
+            $resultado = [];
+            foreach ($data as $key => $value) {
+                $novo_caminho = empty($caminho) ? $key : $caminho . '.' . $key;
+                
+                if (is_array($value) || is_object($value)) {
+                    $resultado[$key] = $this->converterObjetosParaArray($value, $novo_caminho);
+                } else {
+                    // Aplica De/Para apenas em valores folha (não arrays/objetos)
+                    $valor = ConvertService::aplicarDePara((string)$value, $novo_caminho, $this->depara_rules);
+                    $resultado[$key] = $valor;
+                }
+            }
+            return $resultado;
+        }
+
+        // Se for um valor simples e tiver caminho (é uma folha)
+        if (!empty($caminho)) {
+            return ConvertService::aplicarDePara((string)$data, $caminho, $this->depara_rules);
         }
 
         return $data;

@@ -3,6 +3,12 @@ include_once __DIR__ . '/../core/functions.php';
 class XmlToArrayService
 {
     private $debug = false;
+    private $depara_rules;
+
+    function __construct($depara_rules)
+    {
+        $this->depara_rules = $depara_rules;
+    }
 
     public function convert($filePath)
     {
@@ -57,7 +63,7 @@ class XmlToArrayService
                 // } else {
                 //     $record[$prop] = $value;
                 // }
-                $value = (string) $child;
+                $value = ConvertService::aplicarDePara((string) $child, $prop, $this->depara_rules);
                 if (!empty($attributes)) {
                     $entry = ['@attributes' => $attributes, '@value' => $value];
                 } else {

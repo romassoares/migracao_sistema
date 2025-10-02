@@ -4,6 +4,7 @@ include_once(__DIR__ . '/../../routes/navigate.php');
 
 function index()
 {
+
     $id = $_GET['id'];
 
     $sql = "SELECT * FROM layout where id = $id";
@@ -25,6 +26,7 @@ function index()
 
 function edit()
 {
+
     $regras = [
         'id_layout' => ['required' => true, 'type' => 'string'],
         'id_layout_coluna' => ['required' => true, 'type' => 'string']
@@ -46,7 +48,7 @@ function edit()
             SEPARATOR ' || '
         ) AS flags 
     FROM layout_colunas 
-    inner JOIN layout_coluna_conteudos AS l_c_d ON layout_colunas.id = l_c_d.id_layout_colunas   
+    LEFT JOIN layout_coluna_conteudos AS l_c_d ON layout_colunas.id = l_c_d.id_layout_colunas   
     WHERE layout_colunas.id_layout = $id_layout AND layout_colunas.id = $id_layout_coluna";
     $layout_coluna = metodo_get($sql, 'migracao');
 

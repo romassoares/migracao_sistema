@@ -9,6 +9,7 @@ var id_layout = ""
 var id_tipo_arquivo = ""
 
 $(document).ready(function () {
+    load(false);
     $('#input_layout_coluna').select2({
         theme: "bootstrap-5",
         width: '100%',
@@ -21,7 +22,7 @@ $(document).ready(function () {
     });
 
     if (modelo.id_concorrente) {
-        load(true)
+        // load(true)
         document.querySelector("#btn_processa_arquivo").className = 'd-flex col mt-2'
         // document.querySelector("#load").style.display = 'block'
         dispararEventoEmSelect(document.querySelector("#concorrente_id"), modelo.id_concorrente)
@@ -38,7 +39,7 @@ $(document).ready(function () {
                 id_tipo_arquivo: modelo.id_tipo_arquivo,
                 id_arquivo: id_arquivo
             })
-            load(false)
+            // load(false)
             id_layout = modelo.id_layout
             id_tipo_arquivo = modelo.id_tipo_arquivo
 

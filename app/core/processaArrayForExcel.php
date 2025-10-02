@@ -28,7 +28,7 @@ function setHeaderAndRetornColumns($modelo_colunas, $dados, $headers, $modelo,  
 
     // Contador de colunas
     $columnsUsed = []; // Colunas que serão efetivamente usadas
-    // dd($modelo_colunas);
+    // dd($modelo_colunas, $layout_colunas);
     foreach ($modelo_colunas as $mc) {
         $descricao_coluna = $mc['descricao_coluna'];
 
@@ -39,7 +39,7 @@ function setHeaderAndRetornColumns($modelo_colunas, $dados, $headers, $modelo,  
             $columnsUsed[] = [
                 'header' => $descricao_coluna,
                 'keys'   => array_values($keys), // Caminho de chaves para acessar no array de dados
-                'col'    => $mc['posicao_coluna'], // Índice numérico da coluna
+                'col'    => $mc['posicao'], // Índice numérico da coluna
             ];
         }
     }
@@ -255,12 +255,23 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
     $valueCorreto = "";
     $valueTodos = "";
 
-    // writeInFileLog($value);
-
-    if (intval($rowIndex) > 1) {
+    // writeInFileLog($colIndex . '  -- ' . $cell . ' -- ' . $value);
+    if ($rowIndex == 1) {
+        $valueCorreto = $value;
+        $valueCriticado = $value;
+        $valueTodos = $value;
+    } else {
         foreach ($layout_colunas_depara as $depara) {
-
+            // writeInFileLog($depara['tipo'] . '  --  ' . $depara['posicao'] .  '  --  ' . $colIndex);
             if (intval($depara['posicao']) == $colIndex) {
+
+                if (intval($depara['obrigatorio']) == 1 && empty($value)) {
+                    $valueCriticado = $value . ' Critica: Campo é obrigatório';
+                    $valueTodos = $value;
+                    $ifExistErro = true;
+                    break;
+                }
+
                 if (strtolower($depara['tipo']) == 'livre' || empty($depara['tipo'])) {
                     $value = strip_tags($value);
                     $value = RemoveStrangeCharacter($value);
@@ -273,7 +284,7 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
                     $value = preg_replace('/[^\d,-]/', '', $value);
                     $value = str_replace(',', '.', $value);
                     if (!is_numeric($value)) {
-                        $valueCriticado = $value . 'Critica: Não é numérico';
+                        $valueCriticado = $value . ' Critica: Não é numérico';
                         $valueTodos = $value;
                         $ifExistErro = true;
                         break;
@@ -286,19 +297,9 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
 
                 if ($depara['tipo'] == 'data') {
                     $formatos = [
-                        'd/m/Y',
-                        'Y-m-d',
-                        'd-m-Y',
-                        'm-d-Y',
-                        'd.m.Y',
-                        'Y.m.d',
-                        'd M Y',
-                        'M d, Y',
-                        'd/m/Y H:i',
-                        'd/m/Y H:i:s',
-                        'Y-m-d H:i',
-                        'Y-m-d H:i:s',
+                        'd/m/Y'
                     ];
+                    $value = preg_replace('/\s+/', ' ', trim($value));
 
                     $date = false;
                     foreach ($formatos as $formato) {
@@ -314,7 +315,7 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
                         $valueCorreto = $value;
                         break;
                     } else {
-                        $valueCriticado = $value . 'Critica: Formato data inválido';
+                        $valueCriticado = $value . ' Critica: Formato data inválido';
                         $valueTodos = $value;
                         $ifExistErro = true;
                         break;
@@ -323,7 +324,7 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
 
                 if ($depara['tipo'] == 'email') {
                     if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                        $valueCriticado = $value . 'Critica: Email inválido';
+                        $valueCriticado = $value . ' Critica: Email inválido';
                         $valueTodos = $value;
                         $ifExistErro = true;
                         break;
@@ -336,7 +337,7 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
 
                 if ($depara['tipo'] == 'telefone') {
                     if (!preg_match('/^\+?[0-9\s\-\(\)]+$/', $value)) {
-                        $valueCriticado = $value . 'Critica: Telefone inválido';
+                        $valueCriticado = $value . ' Critica: Telefone inválido';
                         $valueTodos = $value;
                         $ifExistErro = true;
                         break;
@@ -350,7 +351,7 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
                 if ($depara['tipo'] == 'sim_nao') {
                     $valores_aceitos = ['sim', 'não', 'nao', 's', 'n', '1', '0', 'true', 'false', 'verdadeiro', 'falso'];
                     if (!in_array(strtolower(trim($value)), $valores_aceitos)) {
-                        $valueCriticado = $value . 'Critica: Valor inválido (Sim/Não)';
+                        $valueCriticado = $value . ' Critica: Valor inválido (Sim/Não)';
                         $valueTodos = $value;
                         $ifExistErro = true;
                         break;
@@ -377,7 +378,7 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
                         $valueTodos = $mapa[$key];
                         break;
                     } else {
-                        $valueCriticado = $value . 'Critica: Valor não mapeado';
+                        $valueCriticado = $value . ' Critica: Valor não mapeado';
                         $valueTodos = $value;
                         $ifExistErro = true;
                         break;
@@ -387,11 +388,7 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
         }
     }
 
-    if ($rowIndex == 1) {
-        $valueCorreto = $value;
-        $valueCriticado = $value;
-        $valueTodos = $value;
-    }
+
 
     $sheetCriticas->setCellValue($cell, $valueCriticado);
     $sheetCertos->setCellValue($cell, $valueCorreto);

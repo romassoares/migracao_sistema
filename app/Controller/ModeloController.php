@@ -186,6 +186,7 @@ function processaArquivo($data)
     $modelo = metodo_get($sql, 'migracao');
 
     $modelo_colunas = metodo_all("SELECT * FROM modelos_colunas 
+                                LEFT JOIN layout_colunas l_col on modelos_colunas.id_layout_coluna = l_col.id
                                   WHERE id_modelo = {$data['id_modelo']} 
                                   ORDER BY posicao_coluna", 'migracao');
 
@@ -197,17 +198,16 @@ function processaArquivo($data)
                             l_col.tipo,
                             l_col.obrigatorio,
                             l_col.nome_exibicao,
+                            l_depara.id AS id_depara,
                             l_depara.conteudo_de,
                             l_depara.Conteudo_para_livre,
-                            l_depara.substituir
+                            l_depara.substituir,
+                            l_depara.ordem
                         FROM layout_colunas AS l_col
                         LEFT JOIN layout_coluna_depara AS l_depara 
                             ON l_col.id = l_depara.id_layout_coluna
                         WHERE l_col.id_layout = " . intval($data['id_layout']) . "
-                        ORDER BY l_col.posicao, l_col.id, l_depara.conteudo_de 
-                        ", 'migracao');
-    $dados = [];
-    $layout_colunas = [];
+                        ORDER BY l_col.id, l_depara.ordem", 'migracao');
 
     foreach ($result as $row) {
         $id_coluna = $row['id_coluna'];
