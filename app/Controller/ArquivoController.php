@@ -11,6 +11,9 @@ function downloadArquivo($data)
 
     $arquivo = __DIR__ . "/../../assets/convertidos/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/{$modelo->id_modelo}/" . $nome_arquivo_download;
 
+    // notdie($nome_arquivo_download);
+    // dd(scandir(__DIR__ . "/../../assets/convertidos/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/{$modelo->id_modelo}/"));
+
     // Limpa buffers para evitar caracteres extras antes do download
     if (ob_get_level()) ob_end_clean();
 
@@ -18,9 +21,9 @@ function downloadArquivo($data)
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment; filename="' . basename($nome_arquivo_download) . '"');
     header('Content-Transfer-Encoding: binary');
-    header('Expires: 0');
-    header('Cache-Control: must-revalidate');
-    header('Pragma: public');
+    // header('Expires: 0');
+    // header('Cache-Control: must-revalidate');
+    // header('Pragma: public');
     header('Content-Length: ' . filesize($arquivo));
 
     flush(); // força envio dos headers

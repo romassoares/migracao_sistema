@@ -23,7 +23,7 @@ $(document).ready(function () {
 
     if (modelo.id_concorrente) {
         // load(true)
-        document.querySelector("#btn_processa_arquivo").className = 'd-flex col mt-2'
+        document.querySelector("#btn_processa_arquivo").className = 'd-flex '
         // document.querySelector("#load").style.display = 'block'
         dispararEventoEmSelect(document.querySelector("#concorrente_id"), modelo.id_concorrente)
 
@@ -110,6 +110,7 @@ function load(value) {
 }
 
 function existeArquivoProcessado() {
+    document.querySelector("#arquivo").className = 'd-none'
     let div_btn_processados_arquivo = document.querySelector("#div_btn_processados_arquivo")
     div_btn_processados_arquivo.className = 'card col-md-6 col-sm-12 d-flex justify-content-center align-items-center p-2'
 }

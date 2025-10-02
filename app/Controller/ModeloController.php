@@ -337,19 +337,19 @@ function processaArquivo($data)
     $writer->setPreCalculateFormulas(false);
     $writer->save($caminhoFinal);
 
-    if (!filesize($caminhoFinal)) {
-        throw new \RuntimeException("Falha ao salvar arquivo: {$caminhoFinal}");
-    }
-
     // salva arquivo com as criticas;
     $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheetCriticas);
     $writer->setPreCalculateFormulas(false);
-    $writer->save($destinoDir . $_SESSION['company']['nome'] . '_' . $modelo->nome . "_" . $modelo->id_modelo . "_Criticados.xlsx");
+    $writer->save($destinoDir . $_SESSION['company']['nome'] . '_' . $modelo->nome_modelo . "_" . $modelo->id_modelo . "_Criticados.xlsx");
 
     // salva arquivo com os erros
     $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheetCertos);
     $writer->setPreCalculateFormulas(false);
-    $writer->save($destinoDir . $_SESSION['company']['nome'] . '_' . $modelo->nome . "_" . $modelo->id_modelo . "_Corretos.xlsx");
+    $writer->save($destinoDir . $_SESSION['company']['nome'] . '_' . $modelo->nome_modelo . "_" . $modelo->id_modelo . "_Corretos.xlsx");
+
+    if (!filesize($caminhoFinal)) {
+        throw new \RuntimeException("Falha ao salvar arquivo: {$caminhoFinal}");
+    }
 
     unset($spreadsheet, $writer, $gruposUnicos);
     gc_collect_cycles();

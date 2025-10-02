@@ -42,11 +42,11 @@
                         <span id="tipo_arquivo_ref"></span>
                     </div>
                 </form>
-                <div class="col-12 d-none" id="div_upload_arquivo">
+                <div class="d-none" id="div_upload_arquivo">
                     <form method="post" id="id_form_upload_arquivo" enctype="multipart/form-data">
-                        <div class="col-12">
-                            <input type="file" name="arquivo" id="arquivo" class="form-control form-control-sm">
-                        </div>
+                        <!-- <div class="col-12"> -->
+                        <input type="file" name="arquivo" id="arquivo" class="form-control form-control-sm">
+                        <!-- </div> -->
                         <div class="d-none" id="div_btn_upload_arquivo">
                             <button type="submit" class="btn btn-success btn-sm">
                                 carregar arquivo
