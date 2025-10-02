@@ -1,5 +1,5 @@
 <?php
-require_once(__DIR__ . '/../Controller/ArquivoController.php');
+// require_once(__DIR__ . '/../Controller/ArquivoController.php');
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
@@ -94,6 +94,8 @@ function writeRowRecursive($data, $columnsUsed, $rowIndex, $ifExistErro, $prefix
 
     // Processa listas com produto cartesiano
     if ($listas) {
+        // notdie('list');
+        // notdie($listas);
         $combos = cartesianProduct($listas);
         foreach ($combos as $combo) {
             $rowVals = $fixedValues;
@@ -137,6 +139,8 @@ function writeRowRecursive($data, $columnsUsed, $rowIndex, $ifExistErro, $prefix
 
     // Processa objetos associativos
     if ($objetos) {
+        // notdie('obj');
+        // notdie($objetos);
         $antes = $rowIndex;
         foreach ($objetos as $chObj => $objVal) {
             $rowResponse = writeRowRecursive(
@@ -167,7 +171,8 @@ function writeRowRecursive($data, $columnsUsed, $rowIndex, $ifExistErro, $prefix
         return $rowIndex;
     }
 
-
+    // notdie('fixed');
+    // notdie($fixedValues);
     // Caso final: linha simples, sem listas nem objetos
     if ($fixedValues !== $lastRowValues && count($fixedValues) == $total_colunas_por_linha) {
         foreach ($fixedValues as $col => $valor) {
@@ -262,17 +267,16 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
         $valueTodos = $value;
     } else {
         foreach ($layout_colunas_depara as $depara) {
-            // writeInFileLog($depara['tipo'] . '  --  ' . $depara['posicao'] .  '  --  ' . $colIndex);
+
             if (intval($depara['posicao']) == $colIndex) {
 
-                if (intval($depara['obrigatorio']) == 1 && empty($value)) {
-                    $valueCriticado = $value . ' Critica: Campo é obrigatório';
-                    $valueTodos = $value;
-                    $ifExistErro = true;
-                    break;
-                }
-
                 if (strtolower($depara['tipo']) == 'livre' || empty($depara['tipo'])) {
+                    if (intval($depara['obrigatorio']) == 1 && empty($value)) {
+                        $valueCriticado = $value . ' Critica: Campo é obrigatório';
+                        $valueTodos = $value;
+                        $ifExistErro = true;
+                        break;
+                    }
                     $value = strip_tags($value);
                     $value = RemoveStrangeCharacter($value);
                     $valueCorreto = $value;
@@ -281,6 +285,12 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
                 }
 
                 if ($depara['tipo'] == 'numerico') {
+                    if (intval($depara['obrigatorio']) == 1 && empty($value)) {
+                        $valueCriticado = $value . ' Critica: Campo é obrigatório';
+                        $valueTodos = $value;
+                        $ifExistErro = true;
+                        break;
+                    }
                     $value = preg_replace('/[^\d,-]/', '', $value);
                     $value = str_replace(',', '.', $value);
                     if (!is_numeric($value)) {
@@ -296,24 +306,12 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
                 }
 
                 if ($depara['tipo'] == 'data') {
-                    $formatos = [
-                        'd/m/Y'
-                    ];
-                    $value = preg_replace('/\s+/', ' ', trim($value));
 
-                    $date = false;
-                    foreach ($formatos as $formato) {
-                        $d = DateTime::createFromFormat($formato, $value);
-                        if ($d && $d->format($formato) === $value) {
-                            $date = $d;
-                            break;
-                        }
-                    }
+                    $date = new DateTime($value); // tenta interpretar automaticamente
 
-                    if ($date) {
-                        $valueTodos = $date->format('Y-m-d');
+                    if ($date) { // Data válida, converte para padrão
+                        $valueTodos   = $date->format('Y-m-d');
                         $valueCorreto = $value;
-                        break;
                     } else {
                         $valueCriticado = $value . ' Critica: Formato data inválido';
                         $valueTodos = $value;
@@ -387,8 +385,6 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
             }
         }
     }
-
-
 
     $sheetCriticas->setCellValue($cell, $valueCriticado);
     $sheetCertos->setCellValue($cell, $valueCorreto);

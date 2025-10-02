@@ -295,6 +295,7 @@ function processaArquivo($data)
         }
     }
 
+
     // ---------- Escreve os grupos únicos na planilha ----------
     $processedCount = 0;
     foreach ($gruposUnicos as $row) {
@@ -324,7 +325,7 @@ function processaArquivo($data)
     }
 
     // ---------- Salva arquivo ----------
-    $destinoDir = __DIR__ . "/../../assets/convertidos/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/";
+    $destinoDir = __DIR__ . "/../../assets/convertidos/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/" . $modelo->id_modelo . '/';
     if (!is_dir($destinoDir) && !mkdir($destinoDir, 0755, true)) {
         throw new \RuntimeException("Não foi possível criar pasta de destino: {$destinoDir}");
     }

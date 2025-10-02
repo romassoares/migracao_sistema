@@ -685,31 +685,31 @@ function baixarArquivo(tipo) {
 
     axios({
         method: 'post',
-        url: '/arquivo/baixarArquivo',
+        url: '/arquivo/downloadArquivo',
         data: {
             id_modelo: modelo_id,
             tipo: tipo
         },
-        // responseType: 'blob'
+        responseType: 'blob'
     }).then(response => {
-        // const url = window.URL.createObjectURL(new Blob([response.data]));
-        // const link = document.createElement('a');
-        // link.href = url;
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
 
-        // // tenta extrair nome do arquivo do header
-        // const disposition = response.headers['content-disposition'];
-        // let fileName = "arquivo.xlsx";
-        // if (disposition && disposition.indexOf('filename=') !== -1) {
-        //     const matches = disposition.match(/filename="?([^"]+)"?/);
-        //     if (matches != null && matches[1]) fileName = matches[1];
-        // }
+        // tenta extrair nome do arquivo do header
+        const disposition = response.headers['content-disposition'];
+        let fileName = "arquivo.xlsx";
+        if (disposition && disposition.indexOf('filename=') !== -1) {
+            const matches = disposition.match(/filename="?([^"]+)"?/);
+            if (matches != null && matches[1]) fileName = matches[1];
+        }
 
-        // link.setAttribute('download', fileName);
-        // document.body.appendChild(link);
-        // link.click();
-        // link.remove();
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
 
-        // window.URL.revokeObjectURL(url);
+        window.URL.revokeObjectURL(url);
     }).catch(error => {
         console.error(error);
         alert('Erro ao baixar arquivo');

@@ -10,7 +10,7 @@ $json = file_get_contents('php://input');
 $data = (array) trata_json_request($json);
 
 $method = $_SERVER['REQUEST_METHOD'];
-// dd('$uri');
+
 if ($method === 'OPTIONS') {
     http_response_code(204);
     exit;
@@ -23,7 +23,7 @@ $uri = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 $baseDir = __DIR__ . '/../app/Controller/';
 
 $explodeUri = explode('/', $uri);
-// dd($uri);
+
 switch ($uri) {
     case '/layout_colunas/novaOrdenacao':
         require $baseDir . 'Layout_colunasController.php';
@@ -34,42 +34,48 @@ switch ($uri) {
         require $baseDir . 'ModelosController.php';
         $explodeUri[1]($data);
         break;
+    // ==============================================
     case 'modelos/store':
         require $baseDir . 'ModelosController.php';
         $explodeUri[1]($data);
         break;
+    // ==============================================
     case 'conversao/salvaArquivo':
         require  $baseDir . 'ConversaoController.php';
         $explodeUri[1]($data);
         break;
+    // ==============================================
     case 'conversao/salvaVinculacaoConvertidoLayout':
         require  $baseDir . 'ConversaoController.php';
         $explodeUri[1]($data);
         break;
+    // ==============================================
     case 'conversao/EditVinculacaoArquivo':
         require  $baseDir . 'ConversaoController.php';
         $explodeUri[1]($data);
         break;
+    // ==============================================
     case 'conversao/removeVinculacaoConvertidoLayout':
         require  $baseDir . 'ConversaoController.php';
         $explodeUri[1]($data);
         break;
+    // ==============================================
     case 'conversao/atualizaColunaDePara':
         require  $baseDir . 'ConversaoController.php';
         $explodeUri[1]($data);
         break;
 
+    // ==============================================
     case 'modelo/processaArquivo':
         require $baseDir . 'ModeloController.php';
         $explodeUri[1]($data);
-        // redirect('modelo/processaArquivo');
         break;
 
-    case 'arquivo/baixarArquivo':
+    // ==============================================
+    case 'arquivo/downloadArquivo':
         require  $baseDir . 'ArquivoController.php';
         $explodeUri[1]($data);
         break;
-    // ==============================================
     default:
         return_api(404, 'not found');
 }
