@@ -11,6 +11,8 @@ $sheet = new stdClass();
 $sheetCriticas = new stdClass();
 $sheetCertos = new stdClass();
 
+$somaUm = false;
+
 // $debug = false;
 
 
@@ -24,7 +26,7 @@ $sheetCertos = new stdClass();
  */
 function setHeaderAndRetornColumns($modelo_colunas, $dados, $headers, $modelo,  $layout_colunas, $ifExistErro)
 {
-    global $spreadsheet, $sheet, $sheetCriticas, $sheetCertos, $layout_colunas_depara;
+    global $spreadsheet, $sheet, $sheetCriticas, $sheetCertos, $layout_colunas_depara, $somaUm;
 
     // Contador de colunas
     $columnsUsed = []; // Colunas que serão efetivamente usadas
@@ -45,6 +47,9 @@ function setHeaderAndRetornColumns($modelo_colunas, $dados, $headers, $modelo,  
     }
 
     foreach ($layout_colunas as $key => $coluna) {
+        // if (intval($key) == 0)
+        //     $somaUm = true;
+
         setCellValueByColumnAndRow($key, 1, $coluna, false);
     }
     // Caso nenhuma coluna seja compatível, encerra com erro
@@ -246,30 +251,27 @@ function findColumnIndex($columnsUsed, $keys)
  */
 function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
 {
-    global $layout_colunas_depara, $spreadsheetCriticas, $spreadsheetCertos, $spreadsheet, $sheetCriticas, $sheetCertos, $sheet, $ifExistErro;
+    global $layout_colunas_depara, $spreadsheetCriticas, $spreadsheetCertos, $spreadsheet, $sheetCriticas, $sheetCertos, $sheet, $ifExistErro, $somaUm;
 
-    if ($rowIndex < 1) {
+    if ($rowIndex < 1)
         throw new \InvalidArgumentException("Row index inválido: $rowIndex");
-    }
-    if ($colIndex < 1) {
+
+    if ($colIndex < 1)
         throw new \InvalidArgumentException("Column index inválido: $colIndex");
-    }
+
     $cell = columnLetter($colIndex) . $rowIndex;
 
     $valueCriticado = "";
     $valueCorreto = "";
     $valueTodos = "";
 
-    // writeInFileLog($colIndex . '  -- ' . $cell . ' -- ' . $value);
     if ($rowIndex == 1) {
         $valueCorreto = $value;
         $valueCriticado = $value;
         $valueTodos = $value;
     } else {
         foreach ($layout_colunas_depara as $depara) {
-
             if (intval($depara['posicao']) == $colIndex) {
-
                 if (strtolower($depara['tipo']) == 'livre' || empty($depara['tipo'])) {
                     if (intval($depara['obrigatorio']) == 1 && empty($value)) {
                         $valueCriticado = $value . ' Critica: Campo é obrigatório';
@@ -291,6 +293,9 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
                         $ifExistErro = true;
                         break;
                     }
+                    if ($value == '') {
+                        $value = 0;
+                    }
                     $value = preg_replace('/[^\d,-]/', '', $value);
                     $value = str_replace(',', '.', $value);
                     if (!is_numeric($value)) {
@@ -306,8 +311,7 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
                 }
 
                 if ($depara['tipo'] == 'data') {
-
-                    $date = new DateTime($value); // tenta interpretar automaticamente
+                    $date = parseDateFlexible($value);
 
                     if ($date) { // Data válida, converte para padrão
                         $valueTodos   = $date->format('Y-m-d');
@@ -362,9 +366,8 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
 
                 if (strtolower($depara['tipo']) == 'flag' && count($depara['depara']) > 0) {
                     $mapa = [];
-
                     foreach ($depara['depara'] as $m) {
-                        if ($value == $m['conteudo_de'] && $m['substituir'] == '1') {
+                        if (strtolower($value) == strtolower($m['conteudo_de'])) {
                             $mapa[strtolower(trim($m['conteudo_de']))] = $m['Conteudo_para_livre'];
                             break;
                         }

@@ -316,7 +316,7 @@ document.querySelector("#id_form_upload_arquivo").addEventListener('submit', asy
 
 function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, convertidosHeaders) {
     load(true)
-    document.querySelector("#div_arquivo_convertido").className = 'd-flex'
+    document.querySelector("#div_arquivo_convertido").className = 'overflow-auto d-flex gap-1 pb-3 div-tabela'
 
     const div_container = document.querySelector("#div_arquivo_convertido")
     div_container.textContent = ''

@@ -10,6 +10,15 @@
         margin: 0 auto;
         z-index: 9999;
     }
+
+    .div-tabela {
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        height: auto;
+        max-height: calc(100vh - 300px);
+        white-space: nowrap;
+        display: block;
+    }
 </style>
 
 <div class="card col-12" id="bodyConversao">

@@ -190,7 +190,6 @@ function processaArquivo($data)
                                   WHERE id_modelo = {$data['id_modelo']} 
                                   ORDER BY posicao_coluna", 'migracao');
 
-
     $result = metodo_all("SELECT 
                             l_col.id_layout,
                             l_col.id AS id_coluna,
@@ -224,13 +223,11 @@ function processaArquivo($data)
         }
 
         // Se existe registro de depara, adiciona no subarray
-        if (!empty($row['conteudo_de'])) {
-            $dados[$id_coluna]['depara'][] = [
-                'conteudo_de'         => $row['conteudo_de'],
-                'Conteudo_para_livre' => $row['Conteudo_para_livre'],
-                'substituir'          => $row['substituir']
-            ];
-        }
+        $dados[$id_coluna]['depara'][] = [
+            'conteudo_de'         => $row['conteudo_de'],
+            'Conteudo_para_livre' => $row['Conteudo_para_livre'],
+            'substituir'          => $row['substituir']
+        ];
     }
 
     $layout_colunas_depara = array_values($dados);
@@ -270,7 +267,6 @@ function processaArquivo($data)
 
     // Pega a primeira coluna como chave para identificar duplicatas
     $colunaChave1 = $columnsUsed[0]['keys'] ?? null;
-    // dd($colunaChave1);
     // ---------- Otimização: Processa grupos únicos para reduzir memória ----------
     $batchSize = 100; // Tamanho do lote de limpeza de memória
     $rowIndex = 2;
@@ -278,7 +274,6 @@ function processaArquivo($data)
     $rowIndexCorreto = 2; // Começa a escrever na linha 2 (linha 1 é cabeçalho)
     $processedCount = 0;
     $gruposUnicos = [];
-
     $rowsRemoveCriticado = [];
     $rowsRemoveCorreto = [];
 
@@ -294,7 +289,6 @@ function processaArquivo($data)
             gc_collect_cycles(); // Limpa memória a cada 1000 registros
         }
     }
-
 
     // ---------- Escreve os grupos únicos na planilha ----------
     $processedCount = 0;
@@ -356,10 +350,6 @@ function processaArquivo($data)
 
     return return_api(200, '', $arquivo->status);
 }
-
-
-
-// =============================
 
 /**
  * Normaliza um valor para string (objetos/arrays em JSON).

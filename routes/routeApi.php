@@ -23,11 +23,12 @@ $uri = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 $baseDir = __DIR__ . '/../app/Controller/';
 
 $explodeUri = explode('/', $uri);
+// dd($explodeUri);
 
 switch ($uri) {
-    case '/layout_colunas/novaOrdenacao':
+    case 'layout_colunas/novaOrdenacao':
         require $baseDir . 'Layout_colunasController.php';
-        $explodeUri[2]($data);
+        $explodeUri[1]($data);
         break;
     // ==============================================
     case 'modelos/getModelos':

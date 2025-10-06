@@ -423,3 +423,16 @@ function monta_caminhos_absolutos_arquivo($items, &$caminhos_absolutos, $prefix 
         }
     }
 }
+
+function parseDateFlexible($value)
+{
+    // troca "/" por "-" para ajudar o DateTime a entender
+    $normalized = str_replace('/', '-', trim($value));
+
+    try {
+        $date = new DateTime($normalized);
+        return $date;
+    } catch (Exception $e) {
+        return false; // não conseguiu interpretar
+    }
+}
