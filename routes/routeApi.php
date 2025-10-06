@@ -23,7 +23,7 @@ $uri = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 $baseDir = __DIR__ . '/../app/Controller/';
 
 $explodeUri = explode('/', $uri);
-// dd($explodeUri);
+
 
 switch ($uri) {
     case 'layout_colunas/novaOrdenacao':

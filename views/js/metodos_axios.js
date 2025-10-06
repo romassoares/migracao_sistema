@@ -1,16 +1,21 @@
 
-async function method_post(url, dataJson) {
+async function method_post(url, data) {
     try {
+        const isFormData = data instanceof FormData;
+
         const result = await axios({
             method: "POST",
             url: url,
-            data: dataJson,
-            contentType: "application/json",
-        })
-        return result.data
+            data: data,
+            headers: isFormData
+                ? { 'Content-Type': 'multipart/form-data' }
+                : { 'Content-Type': 'application/json' },
+        });
 
+        return result.data;
     } catch (error) {
-        console.log(error)
+        console.error('Erro no method_post:', error);
+        throw error;
     }
 }
 

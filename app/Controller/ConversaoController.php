@@ -2,6 +2,8 @@
 include_once(__DIR__ . '/../core/includes.php');
 include_once(__DIR__ . '/../../routes/navigate.php');
 
+ini_set('memory_limit', '512M');
+
 function index()
 {
     // $id_modelo = isset($_GET['id_modelo']) ? $_GET['id_modelo'] : '199';
@@ -44,6 +46,7 @@ function index()
 
 function uploadArquivo()
 {
+
     $id_modelo = $_POST['modelo_id'];
     $file = $_FILES;
 
@@ -62,8 +65,6 @@ function uploadArquivo()
         $layout_colunas = metodo_all($sql_layout_colunas, 'migracao');
 
         // ===============================================================
-
-        ini_set('memory_limit', '512M');
 
         // $connection = ftp_connect('ftp.localhost');
         // $login = ftp_login($connection, $ftp_user_name, $ftp_user_pass);

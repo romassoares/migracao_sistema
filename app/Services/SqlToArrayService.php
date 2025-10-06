@@ -15,16 +15,16 @@ class SqlToArrayService
         $iniciou_insert = false;
 
         $handle = fopen($arquivo, "r");
-
         if ($handle) {
             $i = 0;
             while (($linha = fgets($handle)) !== false) {
                 $linha = strtolower(trim($linha));
+
                 if (strpos($linha, "insert into") !== false && empty($items[0]) && $i == 0) {
                     $linha = strstr($linha, '(');
                     $linha = str_replace('values', '', $linha);
                     $linha = str_replace(['`', "'", '"', "(", ")"], '', $linha);
-                    $items[] = $linha;
+                    $items[] = RemoveStrangeCharacter($linha);
                     $iniciou_insert = true;
                     continue;
                 }
@@ -33,7 +33,7 @@ class SqlToArrayService
                 if (strpos($linha, "insert into") === false && $iniciou_insert == true) {
                     $linha = str_replace(['`', "'", '"', "(", ")"], '', $linha);
                     if ($this->verifica_ja_existe_no_array($items, $linha)) {
-                        $items[] = $linha;
+                        $items[] = RemoveStrangeCharacter($linha);
                         $ultimo = substr($linha, -1);
                         if ($ultimo == ";")
                             $iniciou_insert = false;
@@ -47,7 +47,7 @@ class SqlToArrayService
             $headers = [];
             if (!empty($items[0])) {
                 $headers = explode(",", $items[0]);
-                array_walk($headers, function(&$header) {
+                array_walk($headers, function (&$header) {
                     $header = trim($header);
                 });
             }
@@ -65,7 +65,7 @@ class SqlToArrayService
             for ($key = 1; $key < count($items); $key++) {
                 $values = explode(",", $items[$key]);
                 $record = [];
-                
+
                 foreach ($headers as $i => $colName) {
                     if (!empty($colName) && isset($values[$i])) {
                         // Remove aspas dos valores
@@ -75,11 +75,13 @@ class SqlToArrayService
                         $record[$colName] = $valor;
                     }
                 }
-                
+
                 if (!empty($record)) {
                     $children[] = $record;
                 }
             }
+            // notdie($children);
+            // die;
 
             return [$caminhos_absolutos, $children];
         } else {

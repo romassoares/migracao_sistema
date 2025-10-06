@@ -429,13 +429,10 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
             const items = base.flatMap(row => getValue(row, header));
 
             let count = 0;
-            for (let i = 0; i < items.length; i++) {
-                if (count === 10) {
-                    i += 5; // pula 5
-                    count = 0;
-                    if (i >= items.length) break;
-                }
+
+            for (let i = 0; i < items.length;) {
                 let item = normalizaValor(items[i]);
+
                 if (item) {
                     let el_tr = document.createElement('tr');
                     let el_td = document.createElement('td');
@@ -458,24 +455,43 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
                         box.style.background = "white";
                         box.style.border = "1px solid #ccc";
                         box.style.boxShadow = "0 4px 8px rgba(0,0,0,0.2)";
-                        box.style.zIndex = "9999";
+                        box.style.zIndex = "10001";
+                        box.style.cursor = "default";
 
-                        let closeBtn = document.createElement('button');
-                        closeBtn.innerText = "Fechar";
-                        closeBtn.style.marginTop = "10px";
-                        closeBtn.onclick = function () {
+                        let overlay = document.createElement('div');
+                        overlay.style.position = "fixed";
+                        overlay.style.top = "0";
+                        overlay.style.left = "0";
+                        overlay.style.width = "100vw";
+                        overlay.style.height = "100vh";
+                        overlay.style.backgroundColor = "rgba(0,0,0,0.3)";
+                        overlay.style.zIndex = "10000";
+
+                        overlay.addEventListener('click', function () {
                             document.body.removeChild(box);
-                        };
+                            document.body.removeChild(overlay);
+                        });
 
-                        box.appendChild(document.createElement("br"));
-                        box.appendChild(closeBtn);
+                        box.addEventListener('click', function (event) {
+                            event.stopPropagation();
+                        });
 
+                        document.body.appendChild(overlay);
                         document.body.appendChild(box);
                     };
 
                     el_tr.appendChild(el_td);
                     tbodyValores.appendChild(el_tr);
+
                     count++;
+                }
+
+                // Incremento controlado manualmente
+                if (count === 2) {
+                    i += 8; // pula 10
+                    count = 0;
+                } else {
+                    i++; // segue normalmente
                 }
             }
             div_col.appendChild(tblValores)
