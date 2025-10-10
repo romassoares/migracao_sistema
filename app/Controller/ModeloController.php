@@ -175,6 +175,8 @@ function processaArquivo($data)
 
     ini_set('memory_limit', '512M');
 
+
+
     // Busca modelo
     $sql = "SELECT *, l.nome 
             FROM modelos AS m
@@ -422,4 +424,45 @@ function classify_list_or_scalar(array $vals): array
         'nonEmptySample' => array_slice($nonEmpty, 0, 8),
         'rawSample' => $rawSample,
     ];
+}
+
+function duplicar($data)
+{
+    $regras = [
+        'id_modelo' => ['required' => true, 'type' => 'int'],
+        'nome_modelo' => ['required' => true, 'type' => 'string']
+    ];
+    $request = validateRequest($data, $regras);
+
+    $id_modelo = $request['dados']['id_modelo'];
+    $nome_modelo = $request['dados']['nome_modelo'];
+
+    $modelo = metodo_get("SELECT * FROM modelos WHERE id_modelo = $id_modelo", 'migracao');
+
+    if ($modelo->id_modelo) {
+        $database = 'migracao';
+
+        $db = new DB();
+        $db->beginTransaction($database);
+
+        try {
+            $sql = "INSERT INTO modelos (nome_modelo, id_layout, id_concorrente, id_tipo_arquivo) VALUES (?,?,?,?)";
+
+            $id = insert_update($sql, 'siii', [
+                $nome_modelo,
+                $modelo->id_layout,
+                $modelo->id_concorrente,
+                $modelo->id_tipo_arquivo
+            ], $database);
+
+            $modelo = metodo_get("SELECT * FROM modelos WHERE id_modelo = $id", 'migracao');
+
+            $db->commit($database);
+        } catch (\Throwable $th) {
+            $db->rollBack($database);
+            die("Erro ao duplicar modelo: " . $th->getMessage());
+        }
+
+        return return_api(200, '', ['modelo' => $modelo]);
+    }
 }

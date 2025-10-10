@@ -28,7 +28,6 @@ $uri = trim($uri, '/');
 //     $uri = ltrim($uri, '/'); // remove a barra inicial se existir
 // }
 
-
 switch ($uri) {
     case '':
         redirect('dashboard/index');
@@ -95,7 +94,7 @@ switch ($uri) {
         redirect('conversao/index');
         break;
     case 'conversao/uploadArquivo':
-        require __DIR__ . '/../app/Controller/ConversaoController.php';
+        require __DIR__ . '/../app/Controller/ArquivoController.php';
         uploadArquivo();
         break;
     case 'conversao/depara':
@@ -123,8 +122,14 @@ switch ($uri) {
     case 'modelo/detalhar':
         redirect('modelo/detalhar');
         break;
+
     case 'conversao/convertidos':
         redirect('conversao/convertidos');
+        break;
+
+    case 'arquivo/lerArquivo':
+        require __DIR__ . '/../app/Controller/ArquivoController.php';
+        lerArquivo();
         break;
 
     default:

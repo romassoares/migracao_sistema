@@ -31,3 +31,9 @@ function montaSelect(ref_id_select, ref_id_data, ref_value_data, attr, data) {
         el_selec.appendChild(option);
     }
 }
+
+function dispararEventoEmSelect(el_select, value_id) {
+    el_select.value = value_id;
+    const evento = new Event('change', { bubbles: true });
+    el_select.dispatchEvent(evento);
+}

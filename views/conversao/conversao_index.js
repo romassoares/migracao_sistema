@@ -4,12 +4,13 @@ var convertidosHeaders = []
 var layout_colunas = []
 var modelos_colunas = []
 var id_arquivo = ""
-
 var id_layout = ""
+var id_concorrente = ""
 var id_tipo_arquivo = ""
+var modelo_id = ""
 
 $(document).ready(function () {
-    load(false);
+    load(true);
     $('#input_layout_coluna').select2({
         theme: "bootstrap-5",
         width: '100%',
@@ -20,16 +21,20 @@ $(document).ready(function () {
             }
         }
     });
+    // exibe_btn_e_input_arquivo(false)
 
     if (modelo.id_concorrente) {
-        // load(true)
-        document.querySelector("#btn_processa_arquivo").className = 'd-flex '
-        // document.querySelector("#load").style.display = 'block'
+        id_concorrente = modelo.id_concorrente
+
+        document.querySelector("#btn_processa_arquivo").className = 'd-flex col mt-2'
+
         dispararEventoEmSelect(document.querySelector("#concorrente_id"), modelo.id_concorrente)
 
         setTimeout(() => {
             dispararEventoEmSelect(document.querySelector("#modelo_id"), modelo.id_modelo)
-        }, 1000)
+        }, 500)
+        // exibe_btn_e_input_arquivo(false)
+        // exibe_btn_duplica_modelo(false)
 
         setTimeout(async () => {
             var resultado = await method_post('/conversao/EditVinculacaoArquivo', {
@@ -39,71 +44,37 @@ $(document).ready(function () {
                 id_tipo_arquivo: modelo.id_tipo_arquivo,
                 id_arquivo: id_arquivo
             })
-            // load(false)
+
             id_layout = modelo.id_layout
             id_tipo_arquivo = modelo.id_tipo_arquivo
 
-            layout_colunas = Object.entries(resultado.data.layout_colunas)
-            modelo = resultado.data.modelo
+            prepara_variaveis_e_campos(resultado)
+        }, 700)
 
-            if (modelo.status == 'P') {
-                existeArquivoProcessado()
-            }
-
-            convertidosHeaders = Object.values(resultado.data.arquivo_convertido[0])
-            if (modelo.descr_tipo_arquivo == "xml" || modelo.descr_tipo_arquivo == "json" || modelo.descr_tipo_arquivo == "xlsx") {
-                convertidos = Object.values(resultado.data.arquivo_convertido[1])
-            } else {
-                convertidos = Object.values(resultado.data.arquivo_convertido)
-            }
-
-            modelos_colunas = Object.entries(resultado.data.modelos_colunas)
-
-            montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, convertidosHeaders)
-
-            // setTimeout(() => {
-            modelos_colunas.forEach((el) => {
-                const el_select = document.querySelector("#select_layout_coluna_" + el[1].id_layout_coluna);
-                if (!el_select) return;
-
-                const valor = el[1].descricao_coluna;
-
-                const oldOnChange = el_select.onchange;
-                el_select.onchange = null;
-
-                $(el_select).val(valor).trigger('change.select2');
-
-                // const optionToDisable = el_select.querySelector(`option[value="${valor}"]`);
-                // if (optionToDisable) {
-                //     optionToDisable.disabled = true;
-                // }
-
-                el_select.onchange = oldOnChange;
-            });
-            atualizaColunas()
-            // document.querySelector("#load").style.display = 'none'
-            // }, 500)
-        }, 1000)
-        // load(false);
+        load(false);
+        exibe_btn_duplica_modelo(false)
+        exibe_btn_e_input_arquivo(false)
     } else {
-        document.querySelector("#div_btn_upload_arquivo").className = 'd-flex col mt-2'
-        // load(false)
+        load(false)
+        exibe_btn_duplica_modelo(true)
+        exibe_btn_e_input_arquivo(true)
     }
+    load(false)
 });
 
 function load(value) {
     // let stack = new Error().stack;
     // console.log(stack)
 
-    // const container = document.querySelector('#bodyConversao');
-    // const elements = container.querySelectorAll('input, select, textarea, button');
+    const container = document.querySelector('#bodyConversao');
+    const elements = container.querySelectorAll(' select, textarea, button');
 
     if (value == true) {
-        // elements.forEach(el => el.disabled = true);
+        elements.forEach(el => el.disabled = true);
         document.querySelector('#load').className = 'd-flex loader'
     } else {
         setTimeout(() => {
-            // elements.forEach(el => el.disabled = false);
+            elements.forEach(el => el.disabled = false);
             document.querySelector('#load').className = 'd-none'
         }, 1000)
     }
@@ -114,13 +85,6 @@ function existeArquivoProcessado() {
     let div_btn_processados_arquivo = document.querySelector("#div_btn_processados_arquivo")
     div_btn_processados_arquivo.className = 'card col-md-6 col-sm-12 d-flex justify-content-center align-items-center p-2'
 }
-
-function dispararEventoEmSelect(el_select, value_id) {
-    el_select.value = value_id;
-    const evento = new Event('change', { bubbles: true });
-    el_select.dispatchEvent(evento);
-}
-
 
 function abrirModalFormModelo() {
     var value_id_concorrente = document.querySelector("#concorrente_id").value
@@ -140,7 +104,7 @@ function abrirModalFormModelo() {
 
 document.querySelector('#layout_id').addEventListener('change', function (e) {
     e.preventDefault()
-    const layoutId = this.value;
+    id_layout = this.value;
     const layoutText = this.options[this.selectedIndex].text;
 
     mudaNomeModelo(layoutText);
@@ -162,8 +126,78 @@ function mudaNomeModelo(layout_text) {
     el_nome_modelo.value = new_nome
 }
 
-document.querySelector("#modelo_id").addEventListener("change", function (e) {
+document.querySelector("#arquivo").addEventListener('change', async function (e) {
     e.preventDefault()
+    load(true)
+    var modelo_id = document.querySelector("#modelo_id").value
+    var arquivo = document.querySelector("#arquivo")
+
+    lerArquivo(arquivo, modelo_id)
+
+    load(false)
+})
+
+async function lerArquivo(arquivo, modelo_id) {
+    // var id_concorrente = document.querySelector("#concorrente_id").value
+    // id_layout = document.querySelector("#layout_id").value
+    load(true)
+    if (!arquivo.files[0]) {
+        alert('Por favor, selecione um arquivo.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('arquivo', arquivo.files[0]);
+    formData.append('modelo_id', modelo_id);
+    var resultado = await method_post('/arquivo/lerArquivo', formData)
+    if (resultado.status == true) {
+        prepara_variaveis_e_campos(resultado)
+    } else {
+        console.log(resultado)
+        alert(resultado)
+    }
+    load(false)
+}
+
+function prepara_variaveis_e_campos(resultado) {
+    load(true)
+    modelo = resultado.data.modelo
+
+    if (modelo.status == 'P') {
+        exibe_btn_e_input_arquivo(false)
+        existeArquivoProcessado()
+    }
+
+    layout_colunas = Object.entries(resultado.data.layout_colunas)
+    convertidosHeaders = Object.values(resultado.data.arquivo_convertido[0])
+    if (modelo.descr_tipo_arquivo == "xml" || modelo.descr_tipo_arquivo == "json" || modelo.descr_tipo_arquivo == "xlsx") {
+        convertidos = Object.values(resultado.data.arquivo_convertido[1])
+    } else {
+        convertidos = Object.values(resultado.data.arquivo_convertido)
+    }
+
+    modelos_colunas = Object.entries(resultado.data.modelos_colunas)
+    montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, convertidosHeaders)
+
+    modelos_colunas.forEach((el) => {
+        const el_select = document.querySelector("#select_layout_coluna_" + el[1].id_layout_coluna);
+        if (!el_select) return;
+
+        const valor = el[1].descricao_coluna;
+
+        const oldOnChange = el_select.onchange;
+        el_select.onchange = null;
+
+        $(el_select).val(valor).trigger('change.select2');
+
+        el_select.onchange = oldOnChange;
+    });
+    atualizaColunas()
+    load(false)
+}
+
+document.querySelector("#modelo_id").addEventListener("change", function (e) {
+    // e.preventDefault()
     load(true)
     const selectedOption = this.options[this.selectedIndex];
     document.querySelector("#tipoArquivoInputGroup").textContent = selectedOption.getAttribute('descr_tipo_arquivo')
@@ -171,24 +205,39 @@ document.querySelector("#modelo_id").addEventListener("change", function (e) {
     let tipo = selectedOption.getAttribute('descr_tipo_arquivo')
     var accepts = tipo == 'xlsx' ? '.xlsx, .xls' : '.' + tipo
     document.querySelector("#arquivo").setAttribute('accept', accepts)
-    habilitaDesabilitaModelo(true)
+
+    var arquivo = document.querySelector("#arquivo")
+    if (arquivo.files[0]) {
+        lerArquivo(arquivo, this.value)
+    }
+
+    exibe_btn_duplica_modelo(true)
+    exibe_btn_e_input_arquivo(true)
     load(false)
 })
 
-function habilitaDesabilitaModelo(action) {
+function exibe_btn_e_input_arquivo(action) {
     classNameDivUpload = 'd-none'
-    if (action == true)
-        classNameDivUpload = 'd-flex'
+    if (action == true && id_arquivo == "")
+        classNameDivUpload = 'd-flex col-12'
 
     document.querySelector("#div_upload_arquivo").className = classNameDivUpload
+}
 
+function exibe_btn_duplica_modelo(action) {
+    classNameDivUpload = 'd-none'
+    if (action == true)
+        classNameDivUpload = 'd-flex order-2'
+
+    document.querySelector("#div-duplica-modelo").className = classNameDivUpload
 }
 
 var class_input_form_control = ' form-control '
 document.querySelector("#concorrente_id").addEventListener('change', async function (e) {
     e.preventDefault()
+    load(true)
     document.querySelector("#tipoArquivoInputGroup").textContent = '?'
-    habilitaDesabilitaModelo(false)
+    exibe_btn_e_input_arquivo(false)
     try {
         var resultado = await method_post('/modelos/getModelos', {
             id_concorrente: this.value
@@ -206,6 +255,7 @@ document.querySelector("#concorrente_id").addEventListener('change', async funct
     } catch (error) {
         alert(error)
     }
+    load(false)
 })
 
 document.querySelector("#id_form_modelo").addEventListener("submit", async function (e) {
@@ -245,40 +295,39 @@ document.querySelector("#id_form_modelo").addEventListener("submit", async funct
             id_tipo_arquivo: id_tipo_arquivo
         })
 
-
         if (resultado.status == true) {
             var modelo = resultado.data.modelo
             var el_modelo = document.querySelector("#modelo_id")
             el_modelo.className = 'd-flex' + class_input_form_control
-
-
             const option = document.createElement('option');
+
             option.value = modelo.id_modelo;
             option.textContent = modelo.nome_modelo
-            document.querySelector("#tipo_arquivo_ref").textContent = modelo.descr_tipo_arquivo;
+            document.querySelector("#tipoArquivoInputGroup").textContent = modelo.descr_tipo_arquivo;
             el_modelo.appendChild(option);
 
             el_modelo.value = modelo.id_modelo;
 
-            habilitaDesabilitaModelo(true)
             el_modelo.disabled = true
-            $('#modal_novo_modelo').modal('hide')
         }
+        exibe_btn_e_input_arquivo(true)
+        $('#modal_novo_modelo').modal('hide')
         load(false)
     } catch (error) {
+        exibe_btn_e_input_arquivo(false)
         load(false)
         alert(error)
     }
 })
 
-
 document.querySelector("#id_form_upload_arquivo").addEventListener('submit', async function (e) {
     e.preventDefault()
     load(true)
-    document.querySelector("#div_upload_arquivo").className = 'd-none'
+    exibe_btn_e_input_arquivo(false)
+    exibe_btn_duplica_modelo(false)
     document.querySelector("#btn_processa_arquivo").className = 'd-flex col mt-2'
 
-    var modelo_id = document.querySelector("#modelo_id").value
+    modelo_id = document.querySelector("#modelo_id").value
     var arquivo = document.querySelector("#arquivo")
 
     if (!arquivo.files[0]) {
@@ -302,8 +351,6 @@ document.querySelector("#id_form_upload_arquivo").addEventListener('submit', asy
             } else {
                 convertidos = Object.values(resultado.data.arquivo_convertido)
             }
-
-            // window.location.href = "/conversao/index?id_modelo=" + modelo.id_modelo;
 
             montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, convertidosHeaders)
         }
@@ -504,6 +551,7 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
         load(false)
         alert('Nenhum header encontrado em convertidosHeaders')
     }
+    load(false)
     // document.querySelector("#load").style.display = 'none'
 }
 
@@ -542,10 +590,10 @@ const getValue = (row, header) => {
 function atualizaColunas() {
     load(true)
     const allSelects = document.querySelectorAll('select[id^="select_layout_coluna_"]');
-
     const valoresSelecionados = Array.from(allSelects)
         .map(sel => sel.value)
         .filter(value => value !== '');
+
 
     allSelects.forEach(currentSelect => {
         Array.from(currentSelect.options).forEach(option => {
@@ -585,11 +633,11 @@ function normalizaValor(value) {
     }
 
     if (Array.isArray(value)) {
-        return 'false';
+        return '[]';
     }
 
     if (typeof value === 'object') {
-        return 'false';
+        return '{}';
     }
 
     if (typeof value === undefined || typeof value === 'undefined') {
@@ -607,17 +655,13 @@ async function salvaVinculacaoColunaConvetidoComLayoutColunas(select) {
     var descricao_coluna = document.querySelector("#input_convertido_header_" + id_ref_col).value;
 
     const dataJsom = {}
-
     dataJsom.descricao_coluna = descricao_coluna;
     dataJsom.id_layout_coluna = id_layout_coluna
     dataJsom.id_modelo = document.querySelector("#modelo_id").value
     dataJsom.id_concorrente = modelo.id_concorrente
 
-    var resultado = await method_post('/conversao/salvaVinculacaoConvertidoLayout', dataJsom)
-    // if (resultado.status == true) {
-    //     if (resultado.data.msg !== '')
-    //         alert(resultado.data.msg)
-    // }
+    await method_post('/conversao/salvaVinculacaoConvertidoLayout', dataJsom)
+
     atualizaTabelaComDePara(select);
     load(false)
 }
@@ -655,24 +699,19 @@ async function removeColunaModelo(select, ol_value) {
     var descricao_coluna = document.querySelector("#input_convertido_header_" + id_ref_col).value;
 
     const dataJsom = {}
-
     dataJsom.descricao_coluna = descricao_coluna
     dataJsom.id_layout_coluna = ol_value
     dataJsom.id_modelo = document.querySelector("#modelo_id").value
     dataJsom.id_concorrente = modelo.id_concorrente
 
-    var resultado = await method_post('/conversao/removeVinculacaoConvertidoLayout', dataJsom)
-    // if (resultado.status == true) {
-    //     if (resultado.data.msg !== '')
-    //         alert(resultado.data.msg)
-    // }
+    await method_post('/conversao/removeVinculacaoConvertidoLayout', dataJsom)
+
     load(false)
 }
 
-
 async function processaArquivo() {
-    document.querySelector("#div_upload_arquivo").className = 'd-none'
     load(true)
+    exibe_btn_e_input_arquivo(false)
 
     var modelo_id = document.querySelector("#modelo_id").value
     var id_concorrente = document.querySelector("#concorrente_id").value
@@ -695,9 +734,8 @@ async function processaArquivo() {
     });
 }
 
-
-
 function baixarArquivo(tipo) {
+    load(true)
     var modelo_id = document.querySelector("#modelo_id").value;
 
     axios({
@@ -727,8 +765,57 @@ function baixarArquivo(tipo) {
         link.remove();
 
         window.URL.revokeObjectURL(url);
+        load(false)
     }).catch(error => {
+        load(false)
         console.error(error);
         alert('Erro ao baixar arquivo');
     });
 }
+
+document.querySelector("#modelo_id").addEventListener("change", function (e) {
+    e.preventDefault()
+    exibe_btn_duplica_modelo(true)
+    const btn_duplica_modelo = document.querySelector('#btn-duplica-modelo')
+
+    btn_duplica_modelo.onclick = () => {
+        abrirModalDuplicaModelo(this.value)
+    }
+})
+
+function abrirModalDuplicaModelo(id) {
+    const selecionado = document.getElementById('modelo_id')
+    const option = selecionado.options[selecionado.selectedIndex];
+    const nome_atual_do_modelo = option.textContent;
+
+    document.querySelector('#id-modelo-duplicar').value = id
+
+    document.querySelector('#nome-modelo').value = nome_atual_do_modelo
+    $('#exampleModal').modal('show')
+}
+
+document.querySelector('#form-duplica-modelo').addEventListener('submit', async function (e) {
+    e.preventDefault()
+    load(true);
+    var dataJson = {}
+    dataJson.id_modelo = document.querySelector('#id-modelo-duplicar').value
+    dataJson.nome_modelo = document.querySelector('#nome-modelo').value
+
+    try {
+        const response = await method_post('/modelo/duplicar', dataJson);
+
+        modelo = response.data.modelo
+        modelo_id = modelo.id_modelo
+
+        dispararEventoEmSelect(document.querySelector("#concorrente_id"), modelo.id_concorrente)
+
+        setTimeout(() => {
+            dispararEventoEmSelect(document.querySelector("#modelo_id"), modelo.id_modelo)
+        }, 500)
+
+        $('#exampleModal').modal('hide')
+    } catch (error) {
+        console.log('Erro ao duplicar modelo: ', error);
+    }
+    load(false);
+})

@@ -1,6 +1,16 @@
 </div>
 </div>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        var currentPath = window.location.pathname;
+        document.querySelectorAll('.nav-link').forEach((el) => {
+            if (el.getAttribute('href') === currentPath) {
+                el.classList.add('selected-item-menu');
+            }
+        });
+    });
+</script>
 </body>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -11,7 +21,6 @@
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap4-duallistbox/4.0.2/jquery.bootstrap-duallistbox.min.js" integrity="sha512-l/BJWUlogVoiA2Pxj3amAx2N7EW9Kv6ReWFKyJ2n6w7jAQsjXEyki2oEVsE6PuNluzS7MvlZoUydGrHMIg33lw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
 
 
 </html>

@@ -20,75 +20,103 @@
         display: block;
     }
 </style>
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Duplicar Modelo</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" id="form-duplica-modelo">
+                <input type="hidden" id="id-modelo-duplicar">
+                <div class="modal-body">
+                    <label for="nome-modelo">Nome Modelo</label>
+                    <input type="text" id="nome-modelo" name="nome-modelo" class="form-control form-sm">
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+            </form>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        </div>
+    </div>
+</div>
+</div>
+<!--  -->
 
 <div class="card col-12" id="bodyConversao">
     <div class="card-header">Conversão</div>
     <div class="card-body">
-        <div class="d-flex">
-            <div class="card col-md-6 col-sm-12 p-2 gap-2">
-                <form id="id_form" action="conversao/store" method="post">
-                    <div class="col">
-                        <label for="concorrente_id">Concorrente</label>
-                        <select class="form-control form-control-sm" name="concorrente_id" id="concorrente_id">
-                            <option value="">Selecione ...</option>
-                            <?php foreach ($concorrentes as $concorrente) { ?>
-                                <option <?= (isset($modelo->id_concorrente) && $modelo->id_concorrente == $concorrente['id']) ? 'selected' : '' ?> value="<?php echo $concorrente['id'] ?>"><?php echo $concorrente['nome'] ?></option>
-                            <?php } ?>
-                        </select>
-                    </div>
-                    <div class="col-12 mt-2">
-                        <label for="modelo_id">Modelo</label>
-                        <div class="input-group input-group-sm">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text" id="tipoArquivoInputGroup">?</span>
-                            </div>
-                            <select class="custom-select" name="modelo_id" id="modelo_id">
-                            </select>
-                            <div class="input-group-append">
-                                <button class="btn btn-outline-secondary" id="btn_abrir_modal_modelo" type="button" onclick="abrirModalFormModelo()">Criar Modelo</button>
-                            </div>
+
+        <div class="card col-md-6 col-sm-12 p-2 gap-2">
+            <form id="id_form" action="conversao/store" method="post">
+                <div class="col">
+                    <label for="concorrente_id">Concorrente</label>
+                    <select class="form-control form-control-sm" name="concorrente_id" id="concorrente_id">
+                        <option value="">Selecione ...</option>
+                        <?php foreach ($concorrentes as $concorrente) { ?>
+                            <option <?= (isset($modelo->id_concorrente) && $modelo->id_concorrente == $concorrente['id']) ? 'selected' : '' ?> value="<?php echo $concorrente['id'] ?>"><?php echo $concorrente['nome'] ?></option>
+                        <?php } ?>
+                    </select>
+                </div>
+                <div class="col-12 mt-2">
+                    <label for="modelo_id">Modelo</label>
+                    <div class="input-group input-group-sm">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text" id="tipoArquivoInputGroup">?</span>
                         </div>
-                        <span id="tipo_arquivo_ref"></span>
+                        <select class="custom-select" name="modelo_id" id="modelo_id">
+                        </select>
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" id="btn_abrir_modal_modelo" type="button" onclick="abrirModalFormModelo()">Criar Modelo</button>
+                        </div>
+                    </div>
+                    <span id="tipo_arquivo_ref"></span>
+                </div>
+            </form>
+
+            <div class="d-none" id="div_upload_arquivo">
+                <form method="post" id="id_form_upload_arquivo" enctype="multipart/form-data" class="col-10">
+                    <input type="file" name="arquivo" id="arquivo" class="form-control form-control-sm col-12">
+                    <div class="order-1">
+                        <button type="submit" class="btn btn-success btn-sm mt-2">
+                            carregar arquivo
+                        </button>
                     </div>
                 </form>
-                <div class="d-none" id="div_upload_arquivo">
-                    <form method="post" id="id_form_upload_arquivo" enctype="multipart/form-data">
-                        <!-- <div class="col-12"> -->
-                        <input type="file" name="arquivo" id="arquivo" class="form-control form-control-sm">
-                        <!-- </div> -->
-                        <div class="d-none" id="div_btn_upload_arquivo">
-                            <button type="submit" class="btn btn-success btn-sm">
-                                carregar arquivo
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="d-none" id="btn_processa_arquivo">
-                    <button type="button" onclick="processaArquivo()" class="btn btn-primary btn-sm d-flex">Processa arquivo</button>
-                </div>
-
             </div>
-            <div class="d-none" id="div_btn_processados_arquivo">
-                <div class="col-6 d-flex flex-column gap-2">
-                    <p>Faça download dos arquivos processados:</p>
-                    <button onclick="baixarArquivo('Corretos')" class="btn btn-secondary btn-sm">Corretor</button>
-                    <button onclick="baixarArquivo('Criticados')" class="btn btn-secondary btn-sm">Criticados</button>
-                    <button onclick="baixarArquivo('Todos')" class="btn btn-secondary btn-sm">Todos</button>
-                </div>
+            <div class="d-none" id="div-duplica-modelo">
+                <button id="btn-duplica-modelo"
+                    data-bs-toggle="modal"
+                    data-bs-target="#exampleModal"
+                    class="btn btn-warning btn-sm mt-2">
+                    Duplicar modelo
+                </button>
             </div>
         </div>
-    </div>
-    <div class="col-12 word-wrap overflow-auto mt-4 m-2" id="div_arquivo_convertido">
-    </div>
-    <div class="col-12 overflow-auto mt-2">
-        <table class="table table-striped">
-            <tbody id="tbody_values_convertidos">
 
-            </tbody>
-        </table>
+        <div class="d-none" id="btn_processa_arquivo">
+            <button type="button" onclick="processaArquivo()" class="btn btn-primary btn-sm d-flex">Processa arquivo</button>
+        </div>
+
+    </div>
+    <div class="d-none" id="div_btn_processados_arquivo">
+        <div class="col-6 d-flex flex-column gap-2">
+            <p>Faça download dos arquivos processados:</p>
+            <button onclick="baixarArquivo('Corretos')" class="btn btn-secondary btn-sm">Corretor</button>
+            <button onclick="baixarArquivo('Criticados')" class="btn btn-secondary btn-sm">Criticados</button>
+            <button onclick="baixarArquivo('Todos')" class="btn btn-secondary btn-sm">Todos</button>
+        </div>
     </div>
 </div>
+
+<div class="col-12 word-wrap overflow-auto mt-4 m-2" id="div_arquivo_convertido"></div>
+<div class="col-12 overflow-auto mt-2">
+    <table class="table table-striped">
+        <tbody id="tbody_values_convertidos">
+
+        </tbody>
+    </table>
 </div>
 <img id="load" src="../../views/assets/imgload.svg" alt="">
 <!--  -->
@@ -137,7 +165,7 @@
 <!--  -->
 
 <?php include_once __DIR__ . '/../includes/scripts.php' ?>
-<script rel="stylesheet" src="../../app/core/js/functions.js?$version ?>"></script>
+<script rel="stylesheet" src="../../app/core/js/functions.js?version=<?= $version ?>"></script>
 <script rel="stylesheet" src="../../views/js/metodos_axios.js?version=<?= $version ?>"></script>
 <script rel="stylesheet" src="../../views/js/functions.js?version=<?= $version ?>"></script>
 <script rel="stylesheet" src="../../views/conversao/conversao_index.js?version=<?= $version ?>"></script>

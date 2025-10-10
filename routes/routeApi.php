@@ -24,7 +24,6 @@ $baseDir = __DIR__ . '/../app/Controller/';
 
 $explodeUri = explode('/', $uri);
 
-
 switch ($uri) {
     case 'layout_colunas/novaOrdenacao':
         require $baseDir . 'Layout_colunasController.php';
@@ -38,6 +37,16 @@ switch ($uri) {
     // ==============================================
     case 'modelos/store':
         require $baseDir . 'ModelosController.php';
+        $explodeUri[1]($data);
+        break;
+    // ==============================================
+    case 'modelo/duplicar':
+        require  $baseDir . 'ModeloController.php';
+        $explodeUri[1]($data);
+        break;
+    // ==============================================
+    case 'modelos/duplicaModelo':
+        require  $baseDir . 'ModelosController.php';
         $explodeUri[1]($data);
         break;
     // ==============================================
@@ -77,6 +86,7 @@ switch ($uri) {
         require  $baseDir . 'ArquivoController.php';
         $explodeUri[1]($data);
         break;
+
     default:
         return_api(404, 'not found');
 }
