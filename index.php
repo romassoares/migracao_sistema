@@ -1,6 +1,6 @@
 <?php
 date_default_timezone_set('America/Sao_Paulo');
-$version = '1.' . date('i');
+$version = date('dmYHis');
 
 $isAxios = isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
     strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';

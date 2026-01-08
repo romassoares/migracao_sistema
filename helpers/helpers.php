@@ -6,16 +6,18 @@ date_default_timezone_set('America/Sao_Paulo');
 function dd(...$array)
 {
 
+    var_dump('<pre>');
     foreach ($array as $value) {
-        print_r($value);
+        var_dump($value);
     }
+    var_dump('</pre>');
     die();
 }
 
 function notdie(...$array)
 {
     foreach ($array as $key => $value) {
-        print_r($value);
+        var_dump($value);
     }
 }
 

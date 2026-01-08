@@ -9,7 +9,7 @@ var id_concorrente = ""
 var id_tipo_arquivo = ""
 var modelo_id = ""
 
-$(document).ready(function () {
+$(document).ready(async function () {
     load(true);
     $('#input_layout_coluna').select2({
         theme: "bootstrap-5",
@@ -32,9 +32,7 @@ $(document).ready(function () {
 
         setTimeout(() => {
             dispararEventoEmSelect(document.querySelector("#modelo_id"), modelo.id_modelo)
-        }, 500)
-        // exibe_btn_e_input_arquivo(false)
-        // exibe_btn_duplica_modelo(false)
+        }, 400)
 
         setTimeout(async () => {
             var resultado = await method_post('/conversao/EditVinculacaoArquivo', {
@@ -83,7 +81,7 @@ function load(value) {
 function existeArquivoProcessado() {
     document.querySelector("#arquivo").className = 'd-none'
     let div_btn_processados_arquivo = document.querySelector("#div_btn_processados_arquivo")
-    div_btn_processados_arquivo.className = 'card col-md-6 col-sm-12 d-flex justify-content-center align-items-center p-2'
+    div_btn_processados_arquivo.className = 'card col-md-6 col-sm-12 d-flex justify-content-center align-items-center p-2 '
 }
 
 function abrirModalFormModelo() {
@@ -129,7 +127,7 @@ function mudaNomeModelo(layout_text) {
 document.querySelector("#arquivo").addEventListener('change', async function (e) {
     e.preventDefault()
     load(true)
-    var modelo_id = document.querySelector("#modelo_id").value
+    modelo_id = document.querySelector("#modelo_id").value
     var arquivo = document.querySelector("#arquivo")
 
     lerArquivo(arquivo, modelo_id)
@@ -197,7 +195,7 @@ function prepara_variaveis_e_campos(resultado) {
 }
 
 document.querySelector("#modelo_id").addEventListener("change", function (e) {
-    // e.preventDefault()
+    e.preventDefault()
     load(true)
     const selectedOption = this.options[this.selectedIndex];
     document.querySelector("#tipoArquivoInputGroup").textContent = selectedOption.getAttribute('descr_tipo_arquivo')
@@ -208,6 +206,7 @@ document.querySelector("#modelo_id").addEventListener("change", function (e) {
 
     var arquivo = document.querySelector("#arquivo")
     if (arquivo.files[0]) {
+        load(false)
         lerArquivo(arquivo, this.value)
     }
 
@@ -339,27 +338,36 @@ document.querySelector("#id_form_upload_arquivo").addEventListener('submit', asy
     formData.append('arquivo', arquivo.files[0]);
     formData.append('modelo_id', modelo_id);
 
-    try {
-        var resultado = await method_post('/conversao/uploadArquivo', formData)
-        if (resultado.status == true) {
+    const resultado = await method_post('/conversao/uploadArquivo', formData)
 
-            layout_colunas = Object.entries(resultado.data.layout_colunas)
-            modelo = resultado.data.modelo
-            convertidosHeaders = Object.values(resultado.data.arquivo_convertido[0])
-            if (modelo.descr_tipo_arquivo == "xml" || modelo.descr_tipo_arquivo == "json") {
-                convertidos = Object.values(resultado.data.arquivo_convertido[1])
-            } else {
-                convertidos = Object.values(resultado.data.arquivo_convertido)
-            }
+    id_arquivo = resultado.data.id_arquivo
 
-            montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, convertidosHeaders)
-        }
-        load(false)
-    } catch (error) {
-        load(false);
-        alert(error)
-    }
+    window.location.href = '/conversao/index?id_modelo=' + modelo_id + '&id_arquivo=' + id_arquivo
+
+    load(false)
 })
+
+async function startProgress() {
+    const interval = setInterval(async () => {
+        let r = await axios.get(`/status/processo`);
+        let resultado = JSON.parse(r.data);
+        let p = JSON.parse(resultado.progress);
+
+        $("#barra")
+            .css("width", p + "%")
+            .attr("aria-valuenow", p)
+            .text(p + "%");
+
+        document.getElementById("msg-progresso").innerText = resultado.message;
+
+        if (p >= 100) {
+            $("#barra").removeClass("progress-bar-animated progress-bar-striped");
+            document.getElementById("progress").className = "progress d-none";
+            document.getElementById("msg-progresso").innerText = '';
+            clearInterval(interval);
+        }
+    }, 2500);
+}
 
 function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, convertidosHeaders) {
     load(true)
@@ -452,7 +460,7 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
             span_botao_depara.title = "Configurar De/Para"
             span_botao_depara.innerHTML = "<i class='bi bi-journals'></i>"
             span_botao_depara.onclick = function () {
-                window.location.href = '/conversao/depara?id_layout_coluna=' + select_layout_coluna.value + '&id_modelo=' + modelo.id_modelo;
+                window.location.href = '/conversao/depara?id_layout_coluna=' + select_layout_coluna.value + '&id_modelo=' + modelo.id_modelo + "&id_arquivo=" + id_arquivo;
             }
 
             div_input_grupo_append.appendChild(span_botao_depara);
@@ -555,37 +563,53 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
     // document.querySelector("#load").style.display = 'none'
 }
 
-const getValue = (row, header) => {
+function showPopup(text) {
+    const box = document.createElement('div');
+    Object.assign(box.style, {
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        padding: "20px",
+        background: "white",
+        border: "1px solid #ccc",
+        boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
+        zIndex: "10001",
+        cursor: "default"
+    });
+    box.innerText = text;
+
+    const overlay = document.createElement('div');
+    Object.assign(overlay.style, {
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        backgroundColor: "rgba(0,0,0,0.3)",
+        zIndex: "10000"
+    });
+
+    overlay.onclick = () => {
+        document.body.removeChild(box);
+        document.body.removeChild(overlay);
+    };
+
+    document.body.append(overlay, box);
+}
+
+function getValue(row, header) {
     if (row == null) return [];
-
-    const parts = Array.isArray(header)
-        ? header
-        : String(header).split('/').filter(Boolean);
-
-    if (parts.length === 0) {
-        return Array.isArray(row) ? row : [row];
-    }
+    const parts = Array.isArray(header) ? header : String(header).split('/').filter(Boolean);
+    if (!parts.length) return Array.isArray(row) ? row : [row];
 
     const [first, ...rest] = parts;
+    if (Array.isArray(row)) return row.flatMap(r => getValue(r, parts));
 
-    if (Array.isArray(row)) {
-        return row.flatMap(r => getValue(r, parts));
-    }
-
-    // Caso não seja objeto válido
-
-    if (typeof row !== 'object') {
-        return [];
-    }
-
+    if (typeof row !== 'object') return [];
     const next = row[first];
-    if (next === undefined) {
-        return getValue(row, rest);
-    }
-
-    // const next = row?.[first];
-    return getValue(next, rest);
-};
+    return next === undefined ? getValue(row, rest) : getValue(next, rest);
+}
 
 function atualizaColunas() {
     load(true)
@@ -620,30 +644,11 @@ function atualizaColunas() {
 }
 
 function normalizaValor(value) {
-    if (value === null) {
-        return 'null';
-    }
-
-    if (value === '') {
-        return 'null';
-    }
-
-    if (typeof value === 'boolean') {
-        return value.toString();
-    }
-
-    if (Array.isArray(value)) {
-        return '[]';
-    }
-
-    if (typeof value === 'object') {
-        return '{}';
-    }
-
-    if (typeof value === undefined || typeof value === 'undefined') {
-        return 'undefined';
-    }
-
+    if (value == null || value === '') return 'null';
+    if (typeof value === 'boolean') return String(value);
+    if (Array.isArray(value)) return '[]';
+    if (typeof value === 'object') return '{}';
+    if (typeof value === 'undefined') return 'undefined';
     return value;
 }
 
@@ -666,30 +671,33 @@ async function salvaVinculacaoColunaConvetidoComLayoutColunas(select) {
     load(false)
 }
 
+
 async function atualizaTabelaComDePara(select) {
-    load(true)
-    const id_ref_col = select.id.replace("select_layout_coluna_", '');
-    const tabela = document.querySelector('#tbl_valores_convertidos_header_' + id_ref_col);
-    const valores = Array.from(tabela?.querySelectorAll('tbody tr td') || [])
+    load(true);
+
+    const idRef = select.id.replace("select_layout_coluna_", '');
+    const tabela = document.querySelector(`#tbl_valores_convertidos_header_${idRef}`);
+    const valores = Array.from(tabela?.querySelectorAll('tbody td') || [])
         .map(td => td.innerText)
-        .filter(v => v !== undefined);
+        .filter(Boolean);
 
     const dataJson = {
         id_layout_coluna: select.value,
         id_modelo: document.querySelector('#modelo_id').value,
-        descricao_coluna: document.querySelector('#input_convertido_header_' + id_ref_col).value,
-        valores: valores
+        descricao_coluna: document.querySelector(`#input_convertido_header_${idRef}`).value,
+        valores
     };
 
-    const resp = await method_post('/conversao/atualizaColunaDePara', dataJson)
-    if (resp && resp.status && resp.data && Array.isArray(resp.data.valores)) {
-        const tds = Array.from(tabela.querySelectorAll('tbody tr td'));
+    const resp = await method_post('/conversao/atualizaColunaDePara', dataJson);
+    if (resp?.status && Array.isArray(resp.data?.valores)) {
+        const tds = tabela.querySelectorAll('tbody td');
         const novos = resp.data.valores;
         for (let i = 0; i < Math.min(tds.length, novos.length); i++) {
             tds[i].innerText = novos[i];
         }
     }
-    load(false)
+
+    load(false);
 }
 
 async function removeColunaModelo(select, ol_value) {
@@ -713,9 +721,13 @@ async function processaArquivo() {
     load(true)
     exibe_btn_e_input_arquivo(false)
 
-    var modelo_id = document.querySelector("#modelo_id").value
-    var id_concorrente = document.querySelector("#concorrente_id").value
+    modelo_id = document.querySelector("#modelo_id").value
+    id_concorrente = document.querySelector("#concorrente_id").value
 
+    // const urlParams = new URLSearchParams(window.location.search);
+    // id_arquivo = urlParams.get('id_arquivo')
+
+    id_arquivo = id_arquivo == "" ? window.location.href.match(/[?&]id_arquivo=(\d+)/)?.[1] : id_arquivo
     axios({
         method: 'post',
         url: '/modelo/processaArquivo',
@@ -723,15 +735,29 @@ async function processaArquivo() {
             id_modelo: modelo_id,
             id_concorrente: id_concorrente,
             id_layout: id_layout,
-            id_tipo_arquivo: id_tipo_arquivo
+            id_tipo_arquivo: id_tipo_arquivo,
+            id_arquivo: id_arquivo,
+            acao: 'iniciar_migracao'
         }
     }).then(response => {
+        document.getElementById("msg-progresso").innerText = '';
+        document.getElementById("progress").className = "progress d-flex";
+
+        $("#barra")
+            .css("width", "0%")
+            .attr("aria-valuenow", 0)
+            .text('');
+
+        if (response.data.status) startProgress();
+
         existeArquivoProcessado()
         load(false)
     }).catch(error => {
         load(false)
         console.error('Erro ao gerar Excel:', error);
     });
+
+
 }
 
 function baixarArquivo(tipo) {

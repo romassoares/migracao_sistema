@@ -4,6 +4,7 @@ include_once(__DIR__ . '/../../routes/navigate.php');
 
 function index()
 {
+
     $sql = 'SELECT * FROM layout';
 
     $layouts = metodo_all($sql, 'migracao');

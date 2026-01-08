@@ -22,11 +22,11 @@ function login()
         $mysqli = $db->connect('migracao');
         $stmt = $mysqli->prepare($sql);
         $stmt->bind_param('s', $user);
-        
+
         if ($stmt->execute()) {
-            
+
             $userDB = $stmt->get_result()->fetch_assoc();
-            
+
             if ($userDB && password_verify($password, $userDB['password_usuario'])) {
                 $_SESSION['user'] = $userDB;
                 $_SESSION['logged'] = true;
@@ -57,8 +57,13 @@ function check_company()
 
             if ($company) {
                 $_SESSION['company_selected'] = true;
-                $_SESSION['company'] = ['id' => $company['id_cliente'], 'nome' => $company['nome_cliente']];
-                // dd($company);
+                $_SESSION['company'] = [
+                    'id' => $company['id_cliente'],
+                    'id_concorrente' => $company['id_concorrente'],
+                    'nome' => $company['nome_cliente'],
+                    'codigo_cliente'=> $company['codigo_cliente']
+                ];
+
                 return true;
             }
         }
@@ -84,9 +89,9 @@ function createCompany()
         if ($stmt->execute()) {
             $id = $mysqli->insert_id;
 
-            
+
             $_SESSION['company_selected'] = true;
-            $_SESSION['company'] = ['id' => $id, 'nome' => $nome_cliente];
+            $_SESSION['company'] = ['id' => $id, 'nome' => $nome_cliente, 'id_concorrente'=> $concorrente,'codigo_cliente'=> $codigo_cliente];
             return true;
         }
     }
@@ -94,7 +99,7 @@ function createCompany()
 }
 
 function trocarSenha()
-{   
+{
     return ['view' => 'auth/trocar_senha', 'data' => []];
 }
 
@@ -109,12 +114,12 @@ function salvarSenha()
 
     $erro = '';
     if ($senha && $nova_senha && $confirma_senha) {
-        
+
         $sql = "SELECT * FROM usuarios WHERE id_usuario=$id LIMIT 1";
         $usuario = metodo_get($sql, 'migracao');
         if ($usuario && password_verify($senha, $usuario->password_usuario)) {
             if ($nova_senha === $confirma_senha) {
-                
+
                 $sql = 'UPDATE usuarios SET password_usuario=? WHERE id_usuario=?';
                 $senha_hash = password_hash($nova_senha, PASSWORD_DEFAULT);
 
@@ -124,7 +129,7 @@ function salvarSenha()
                 if (!$stmt->execute()) {
                     die('Failed to execute statement in insert update execute: ' . $stmt->error);
                 }
-                
+
                 return ['view' => 'auth/trocar_senha', 'data' => ['success' => 'Senha alterada com sucesso.']];
             } else {
                 $erro = 'As novas senhas não conferem.';

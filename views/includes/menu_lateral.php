@@ -51,11 +51,26 @@
     </div>
     <nav class="flex-grow-1 px-4 py-3">
         <ul class="nav flex-column gap-2">
+
+
+            <?php
+            if (intval($_SESSION['company']['id_concorrente']) == 11) {
+            ?>
+                <li class="nav-item">
+                    <a href="/vista/index" class="nav-link text-white d-flex align-items-center">
+                        <i class="bi bi-box-seam me-2"></i> Vista
+                    </a>
+                </li>
+            <?php } ?>
+
+
             <li class="nav-item">
                 <a href="/conversao/index" class="nav-link text-white d-flex align-items-center">
                     <i class="bi bi-file-arrow-up me-2"></i> Conversão
                 </a>
             </li>
+
+
             <li class="nav-item">
                 <a href="/layout/index" class="nav-link text-white d-flex align-items-center">
                     <i class="bi bi-layout-text-sidebar-reverse me-2"></i> Layout
@@ -66,6 +81,7 @@
                     <i class="bi bi-people me-2"></i> Concorrentes
                 </a>
             </li>
+
             <!-- <li class="nav-item">
                 <a href="/layout_colunas/index" class="nav-link text-white d-flex align-items-center">
                     <i class="bi bi-columns-gap me-2"></i> Layout colunas

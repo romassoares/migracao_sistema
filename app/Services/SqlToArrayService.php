@@ -12,82 +12,91 @@ class SqlToArrayService
     public function convert($arquivo)
     {
         $items = [];
+        $handle = fopen($arquivo, "r");
+        if (!$handle) {
+            dd("erro ao ler o arquivo");
+        }
+
+        $buffer = '';
         $iniciou_insert = false;
 
-        $handle = fopen($arquivo, "r");
-        if ($handle) {
-            $i = 0;
-            while (($linha = fgets($handle)) !== false) {
-                $linha = strtolower(trim($linha));
+        while (($linha = fgets($handle)) !== false) {
+            $linha = trim($linha);
+            if ($linha === '') continue;
 
-                if (strpos($linha, "insert into") !== false && empty($items[0]) && $i == 0) {
-                    $linha = strstr($linha, '(');
-                    $linha = str_replace('values', '', $linha);
-                    $linha = str_replace(['`', "'", '"', "(", ")"], '', $linha);
-                    $items[] = RemoveStrangeCharacter($linha);
-                    $iniciou_insert = true;
-                    continue;
-                }
+            if (stripos($linha, "insert into") !== false) {
+                $iniciou_insert = true;
+                $buffer = $linha;
+            } elseif ($iniciou_insert) {
+                $buffer .= ' ' . $linha;
+            }
 
+            if ($iniciou_insert && substr(trim($linha), -1) === ';') {
+                // remove ';' e normaliza
+                $comando = trim($buffer, " ;");
+                $comando = preg_replace('/\s+/', ' ', $comando);
 
-                if (strpos($linha, "insert into") === false && $iniciou_insert == true) {
-                    $linha = str_replace(['`', "'", '"', "(", ")"], '', $linha);
-                    if ($this->verifica_ja_existe_no_array($items, $linha)) {
-                        $items[] = RemoveStrangeCharacter($linha);
-                        $ultimo = substr($linha, -1);
-                        if ($ultimo == ";")
-                            $iniciou_insert = false;
+                // separa cabeçalho e valores
+                if (preg_match('/insert into\s+[^()]+\(([^)]+)\)\s+values\s*\((.+)\)/is', $comando, $m)) {
+                    $colunas = explode(',', $m[1]);
+                    $valores = explode(',', $m[2]);
+
+                    $colunas = array_map(function ($c) {
+                        return trim(str_replace(['`', "'", '"'], '', $c));
+                    }, $colunas);
+
+                    $valores = array_map(function ($v) {
+                        return trim(str_replace(['`', "'", '"'], '', $v));
+                    }, $valores);
+
+                    if (empty($items)) {
+                        $items[] = implode(',', $colunas);
                     }
-                }
-            }
-            $i++;
-            fclose($handle);
 
-            // Processa os headers (primeira linha)
-            $headers = [];
-            if (!empty($items[0])) {
-                $headers = explode(",", $items[0]);
-                array_walk($headers, function (&$header) {
-                    $header = trim($header);
-                });
-            }
-
-            // Cria caminhos absolutos
-            $caminhos_absolutos = [];
-            foreach ($headers as $col) {
-                if (!empty($col)) {
-                    $caminhos_absolutos[] = $col;
-                }
-            }
-
-            // Processa os valores com De/Para
-            $children = [];
-            for ($key = 1; $key < count($items); $key++) {
-                $values = explode(",", $items[$key]);
-                $record = [];
-
-                foreach ($headers as $i => $colName) {
-                    if (!empty($colName) && isset($values[$i])) {
-                        // Remove aspas dos valores
-                        $value = preg_replace('/^"(.*)"$/', '$1', trim($values[$i]));
-                        // Aplica as regras de De/Para
-                        $valor = ConvertService::aplicarDePara($value, $colName, $this->depara_rules);
-                        $record[$colName] = $valor;
+                    if ($this->verifica_ja_existe_no_array($items, implode(',', $valores))) {
+                        $items[] = RemoveStrangeCharacter(implode(',', $valores));
                     }
                 }
 
-                if (!empty($record)) {
-                    $children[] = $record;
-                }
+                $iniciou_insert = false;
+                $buffer = '';
             }
-            // notdie($children);
-            // die;
-
-            return [$caminhos_absolutos, $children];
-        } else {
-            dd("error ao ler o arquivo");
         }
+
+        fclose($handle);
+
+        // ============================
+        // Processa cabeçalho
+        // ============================
+        $headers = [];
+        if (!empty($items[0])) {
+            $headers = explode(",", $items[0]);
+            array_walk($headers, fn(&$h) => $h = trim($h));
+        }
+
+        $children = [];
+        for ($key = 1; $key < count($items); $key++) {
+            $values = explode(",", $items[$key]);
+            $record = [];
+
+            foreach ($headers as $i => $colName) {
+                if (!empty($colName) && isset($values[$i])) {
+                    $value = trim($values[$i]);
+                    $valor = ConvertService::aplicarDePara($value, $colName, $this->depara_rules);
+                    $record[$colName] = $valor;
+                }
+            }
+
+            if (!empty($record)) {
+                $children[] = $record;
+            }
+        }
+
+        return [$headers, $children];
     }
+
+
+
     public function verifica_ja_existe_no_array($array, $linha)
     {
         $result = array_filter($array, function ($item) use ($linha) {

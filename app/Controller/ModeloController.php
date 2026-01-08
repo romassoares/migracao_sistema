@@ -1,7 +1,12 @@
 <?php
 require_once __DIR__ . '/../core/includes.php';
+require_once __DIR__ . "/ArquivoController.php";
 
-set_time_limit(5000);
+ini_set('session.gc_maxlifetime', 4200);
+ini_set('session.cookie_lifetime', 4200);
+session_set_cookie_params(4200);
+
+global $arquivoCriticado;
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -167,16 +172,15 @@ function lerArquivoCsv($colunas, $arquivos, $modelo)
 /**
  * Processes a data file, converts it, and generates an Excel spreadsheet.
  */
-function processaArquivo($data)
+function processaArquivo($data, $update)
 {
     global $layout_colunas_depara, $spreadsheet, $spreadsheetCriticas, $spreadsheetCertos, $sheet, $sheetCriticas, $sheetCertos, $ifExistErro;
 
     if (ob_get_length()) ob_end_clean();
 
-    ini_set('memory_limit', '512M');
+    $update(0, "Iniciando...");
 
-
-
+    $id_arquivo = $data['id_arquivo'];
     // Busca modelo
     $sql = "SELECT *, l.nome 
             FROM modelos AS m
@@ -186,7 +190,7 @@ function processaArquivo($data)
             LEFT JOIN arquivos AS a ON m.id_modelo = a.id_modelo
             WHERE m.id_modelo = " . intval($data['id_modelo']) . " and m.id_layout = " . intval($data['id_layout']) . " and m.id_concorrente = " . intval($data['id_concorrente']) . " and m.id_tipo_arquivo = " . intval($data['id_tipo_arquivo']);
     $modelo = metodo_get($sql, 'migracao');
-
+    $update(5, "Carregando modelo...");
     $modelo_colunas = metodo_all("SELECT * FROM modelos_colunas 
                                 LEFT JOIN layout_colunas l_col on modelos_colunas.id_layout_coluna = l_col.id
                                   WHERE id_modelo = {$data['id_modelo']} 
@@ -209,7 +213,7 @@ function processaArquivo($data)
                             ON l_col.id = l_depara.id_layout_coluna
                         WHERE l_col.id_layout = " . intval($data['id_layout']) . "
                         ORDER BY l_col.id, l_depara.ordem", 'migracao');
-
+    $dados = [];
     foreach ($result as $row) {
         $id_coluna = $row['id_coluna'];
         $layout_colunas[$row['posicao']] = $row['nome_exibicao'];
@@ -234,46 +238,60 @@ function processaArquivo($data)
 
     $layout_colunas_depara = array_values($dados);
 
-    $arquivo = metodo_get("SELECT * FROM arquivos 
-                            WHERE id_modelo = " . intval($data['id_modelo']) . " 
-                              AND id_cliente = " . $_SESSION['company']['id'] . " 
-                              LIMIT 1", 'migracao');
+    $arquivo = metodo_get("SELECT * FROM arquivos WHERE id_arquivo = $id_arquivo", 'migracao');
 
+    $update(15, " Processando arquivo {$arquivo->nome_arquivo}...");
+    // $update(15, " company nome {$_SESSION['company']['nome']}...");
+    // $update(15, " modelo nome {$modelo->nome_modelo}...");
+    // $update(15, " modelo id_modelo {$modelo->id_modelo}...");
+    // $update(15, " arquivo nome_arquivo {$modelo->nome_arquivo}...");
 
     $arq_cli = "./assets/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/{$modelo->id_modelo}/{$arquivo->nome_arquivo}";
+
     if (!file_exists($arq_cli)) die('Arquivo não encontrado.');
 
     $extension_file = pathinfo($arquivo->nome_arquivo, PATHINFO_EXTENSION);
 
-    $sql = "UPDATE arquivos SET status = ? WHERE id_cliente = ? and id_modelo = ?";
-    insert_update($sql, "sii", ['P', $arquivo->id_cliente, $arquivo->id_modelo], 'migracao');
-
     // Converte
     $convert   = new ConvertService();
-    $converted = $convert->converter($arq_cli, $extension_file, $modelo->descr_tipo_arquivo);
+    $converted = $convert->converter($arq_cli, $extension_file, $modelo->descr_tipo_arquivo, 'processaArquivo');
+
+    $update(30, " Arquivo convertido. Gerando Excel...");
+    $qntItems = count($converted[1]);
+
+
+
+    $sql = "UPDATE arquivos SET quantidade_registros = ?, status = ? WHERE id_cliente = ? and id_modelo = ?";
+    insert_update($sql, "isii", [$qntItems, 'P', $arquivo->id_cliente, $arquivo->id_modelo], 'migracao');
 
     $headers = $converted[0] ?? [];
     $dados   = $converted[1] ?? [];
 
+
+    // writeInFileLog(json_encode($dados));
+
+    $destinoDir = __DIR__ . "/../../assets/convertidos/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/" . $modelo->id_modelo . '/';
+
+    if (!is_dir($destinoDir) && !mkdir($destinoDir, 0755, true)) {
+        throw new \RuntimeException("Não foi possível criar pasta de destino: {$destinoDir}");
+    }
+
     $spreadsheet = new Spreadsheet();
     $sheet = $spreadsheet->getActiveSheet();
 
-    $spreadsheetCriticas = new Spreadsheet();
-    $sheetCriticas = $spreadsheetCriticas->getActiveSheet();
+    $arquivoCriticado = $destinoDir . $_SESSION['company']['nome'] . '_' . $modelo->nome_modelo . "_" . $modelo->id_modelo . "_Criticados.txt";
 
-    $spreadsheetCertos = new Spreadsheet();
-    $sheetCertos = $spreadsheetCertos->getActiveSheet();
+    createArquivoCriticadoLog($arquivoCriticado);
 
+    $update(50, "criando headers...");
     // Processa o array para excel
     $columnsUsed = setHeaderAndRetornColumns($modelo_colunas, $dados, $headers, $modelo,  $layout_colunas, $ifExistErro);
 
     // Pega a primeira coluna como chave para identificar duplicatas
     $colunaChave1 = $columnsUsed[0]['keys'] ?? null;
     // ---------- Otimização: Processa grupos únicos para reduzir memória ----------
-    $batchSize = 100; // Tamanho do lote de limpeza de memória
+    $batchSize = 300; // Tamanho do lote de limpeza de memória
     $rowIndex = 2;
-    $rowIndexCriticado = 2; // Começa a escrever na linha 2 (linha 1 é cabeçalho)
-    $rowIndexCorreto = 2; // Começa a escrever na linha 2 (linha 1 é cabeçalho)
     $processedCount = 0;
     $gruposUnicos = [];
     $rowsRemoveCriticado = [];
@@ -281,20 +299,26 @@ function processaArquivo($data)
 
     // Agrupa dados únicos pela primeira coluna
     foreach ($dados as $key => $row) {
+        $colunaChave1 = is_array($colunaChave1) ? $colunaChave1 : [$colunaChave1];
         $valor1 = $colunaChave1 ? getNestedValue($row, $colunaChave1) : '';
+
         $chaveGrupo = is_array($valor1) ? implode(',', $valor1) : (string)$valor1;
         if (!isset($gruposUnicos[$chaveGrupo . '_' . $key])) {
             $gruposUnicos[$chaveGrupo . '_' . $key] = $row;
         }
+
         $processedCount++;
         if ($processedCount % 1000 === 0) {
-            gc_collect_cycles(); // Limpa memória a cada 1000 registros
+            gc_collect_cycles();
         }
     }
-
+    $update(60, "  Processando " . count($gruposUnicos) . " registros únicos...");
     // ---------- Escreve os grupos únicos na planilha ----------
     $processedCount = 0;
+    // $pctSomaStatus = count($gruposUnicos) / 25;
+    // $contagemStatus = 60;
     foreach ($gruposUnicos as $row) {
+
         $rowIndex = writeRowRecursive($row, $columnsUsed, $rowIndex, $ifExistErro);
 
         if ($ifExistErro) {
@@ -306,25 +330,17 @@ function processaArquivo($data)
         $ifExistErro = false;
 
         $processedCount++;
+        // if ($pctSomaStatus == $processedCount) {
+        //     $update($contagemStatus++, "  Processando...");
+        // }
         if ($processedCount % $batchSize === 0) {
             $spreadsheet->garbageCollect();
             gc_collect_cycles();
         }
     }
 
-    foreach (array_reverse($rowsRemoveCriticado) as $rowNum) {
-        $sheetCriticas->removeRow($rowNum);
-    }
-
-    foreach (array_reverse($rowsRemoveCorreto) as $rowNum) {
-        $sheetCertos->removeRow($rowNum);
-    }
-
+    $update(85, "  Finalizando planilha...");
     // ---------- Salva arquivo ----------
-    $destinoDir = __DIR__ . "/../../assets/convertidos/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/" . $modelo->id_modelo . '/';
-    if (!is_dir($destinoDir) && !mkdir($destinoDir, 0755, true)) {
-        throw new \RuntimeException("Não foi possível criar pasta de destino: {$destinoDir}");
-    }
     // Gera nome do arquivo com timestamp
     $caminhoFinal = $destinoDir . $_SESSION['company']['nome'] . '_' . $modelo->nome_modelo . "_" . $modelo->id_modelo . "_Todos.xlsx";
 
@@ -332,16 +348,8 @@ function processaArquivo($data)
     $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
     $writer->setPreCalculateFormulas(false);
     $writer->save($caminhoFinal);
-
-    // salva arquivo com as criticas;
-    $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheetCriticas);
-    $writer->setPreCalculateFormulas(false);
-    $writer->save($destinoDir . $_SESSION['company']['nome'] . '_' . $modelo->nome_modelo . "_" . $modelo->id_modelo . "_Criticados.xlsx");
-
-    // salva arquivo com os erros
-    $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheetCertos);
-    $writer->setPreCalculateFormulas(false);
-    $writer->save($destinoDir . $_SESSION['company']['nome'] . '_' . $modelo->nome_modelo . "_" . $modelo->id_modelo . "_Corretos.xlsx");
+    $update(95, "limpando memoria.");
+    // closeArquivoCriticadoLog();
 
     if (!filesize($caminhoFinal)) {
         throw new \RuntimeException("Falha ao salvar arquivo: {$caminhoFinal}");
@@ -350,9 +358,21 @@ function processaArquivo($data)
     unset($spreadsheet, $writer, $gruposUnicos);
     gc_collect_cycles();
 
-    return return_api(200, '', $arquivo->status);
+    $update(100, "Processo concluído!");
+    // return return_api(200, '', $arquivo->status);
+    return;
 }
 
+function debugTime($msg = '')
+{
+    $mt = microtime(true);
+
+    $time = date("H:i:s");
+
+    $ms = sprintf("%04d", ($mt - floor($mt)) * 10000);
+
+    echo "{$time}{$ms}  -->" . $msg . PHP_EOL;
+}
 /**
  * Normaliza um valor para string (objetos/arrays em JSON).
  */
@@ -438,31 +458,112 @@ function duplicar($data)
     $nome_modelo = $request['dados']['nome_modelo'];
 
     $modelo = metodo_get("SELECT * FROM modelos WHERE id_modelo = $id_modelo", 'migracao');
+    if (!$modelo || !$modelo->id_modelo) {
+        return return_api(400, 'Modelo não encontrado');
+    }
 
-    if ($modelo->id_modelo) {
-        $database = 'migracao';
+    $id_concorrente = $modelo->id_concorrente;
+    $database = 'migracao';
+    $db = new DB();
+    $db->beginTransaction($database);
 
-        $db = new DB();
-        $db->beginTransaction($database);
+    try {
 
-        try {
-            $sql = "INSERT INTO modelos (nome_modelo, id_layout, id_concorrente, id_tipo_arquivo) VALUES (?,?,?,?)";
+        // =================================================================
 
-            $id = insert_update($sql, 'siii', [
-                $nome_modelo,
-                $modelo->id_layout,
-                $modelo->id_concorrente,
-                $modelo->id_tipo_arquivo
-            ], $database);
+        $sql = "INSERT INTO modelos (nome_modelo, id_layout, id_concorrente, ativo, id_tipo_arquivo) VALUES (?,?,?,?,?)";
+        $novo_id_modelo = insert_update($sql, 'siisi', [
+            $nome_modelo,
+            $modelo->id_layout,
+            $modelo->id_concorrente,
+            $modelo->ativo,
+            $modelo->id_tipo_arquivo,
+        ], $database);
 
-            $modelo = metodo_get("SELECT * FROM modelos WHERE id_modelo = $id", 'migracao');
+        // =================================================================
 
-            $db->commit($database);
-        } catch (\Throwable $th) {
-            $db->rollBack($database);
-            die("Erro ao duplicar modelo: " . $th->getMessage());
+        $sql = "INSERT INTO modelos_colunas (id_modelo, id_layout_coluna, posicao_coluna, formato_data, ativo, id_concorrente, descricao_coluna)
+                SELECT $novo_id_modelo AS id_modelo, id_layout_coluna, posicao_coluna, formato_data, ativo, id_concorrente, descricao_coluna
+                FROM modelos_colunas
+                WHERE id_modelo = $id_modelo
+                  AND id_concorrente = $id_concorrente";
+        metodo_exec($sql, $database);
+
+        // =================================================================
+
+        $sql_deparas_ant = "SELECT lcd.*, mc.id_layout_coluna
+            FROM modelos_colunas AS mc
+            INNER JOIN layout_coluna_depara AS lcd
+                ON mc.id_layout_coluna = lcd.id_layout_coluna
+            WHERE mc.id_modelo = $id_modelo
+            AND mc.id_concorrente = $id_concorrente
+        ";
+        $deparas_ant = metodo_all($sql_deparas_ant, $database);
+
+        $sql_deparas_novo = "SELECT * FROM modelos_colunas AS ml
+            WHERE ml.id_modelo = $novo_id_modelo
+            AND ml.id_concorrente = $id_concorrente
+        ";
+        $deparas_novo = metodo_all($sql_deparas_novo, $database);
+
+        $sql_dup_deparas = "INSERT INTO layout_coluna_depara (
+            id_layout_coluna,
+            id_modelo_coluna,
+            conteudo_de,
+            id_layout_coluna_conteudos,
+            `Conteudo_para_livre`,
+            substituir,
+            ordem
+        ) VALUES ";
+
+        $valores = [];
+
+        foreach ($deparas_ant as $antigo) {
+            foreach ($deparas_novo as $novo) {
+                // Matching rule: same layout column
+                if ($antigo['id_layout_coluna'] == $novo['id_layout_coluna']) {
+
+                    $valores[] = sprintf(
+                        "(%d, %d, %s, %s, %s, %s, %s)",
+                        $antigo['id_layout_coluna'],
+                        $novo['id_modelo_coluna'],
+                        $antigo['conteudo_de'] !== null ? ("'" . addslashes($antigo['conteudo_de']) . "'") : 'NULL',
+                        $antigo['id_layout_coluna_conteudos'] !== null ? $antigo['id_layout_coluna_conteudos'] : 'NULL',
+                        $antigo['Conteudo_para_livre'] !== null ? ("'" . addslashes($antigo['Conteudo_para_livre']) . "'") : 'NULL',
+                        $antigo['substituir'] !== null ? $antigo['substituir'] : 'NULL',
+                        $antigo['ordem'] !== null ? $antigo['ordem'] : 'NULL'
+                    );
+                }
+            }
         }
 
-        return return_api(200, '', ['modelo' => $modelo]);
+        if (!empty($valores)) {
+            $sql_dup_deparas .= implode(", ", $valores);
+            metodo_exec($sql_dup_deparas, $database);
+        } else {
+            return return_api(200, 'Nenhum depara duplicado (sem correspondências encontradas)', [
+                'modelo' => $novo_id_modelo
+            ]);
+        }
+
+
+        // metodo_exec($sql_dup_deparas, $database);
+
+        // =================================================================
+        $modeloDuplicado = metodo_get("SELECT * FROM modelos WHERE id_modelo = $novo_id_modelo", $database);
+
+        $db->commit($database);
+        return return_api(200, 'Modelo duplicado com sucesso', ['modelo' => $modeloDuplicado]);
+    } catch (\Throwable $th) {
+        $db->rollBack($database);
+        die("Erro ao duplicar modelo: " . $th->getMessage());
     }
+}
+
+function createArquivoCriticadoLog($dir_name)
+{
+    global $arquivoCriticado;
+    $arquivoCriticado = $dir_name;
+
+    file_put_contents($arquivoCriticado, '');
 }

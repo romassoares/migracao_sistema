@@ -58,7 +58,7 @@ class JsonToArrayService
             $resultado = [];
             foreach ($data as $key => $value) {
                 $novo_caminho = empty($caminho) ? $key : $caminho . '.' . $key;
-                
+
                 if (is_array($value) || is_object($value)) {
                     $resultado[$key] = $this->converterObjetosParaArray($value, $novo_caminho);
                 } else {

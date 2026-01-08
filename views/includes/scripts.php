@@ -1,6 +1,7 @@
 </div>
 </div>
 </div>
+<img id="load-img" src="../../views/assets/imgload.svg" alt="">
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         var currentPath = window.location.pathname;
@@ -10,6 +11,8 @@
             }
         });
     });
+
+    document.querySelector('#load-img').className = 'd-none'
 </script>
 </body>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>

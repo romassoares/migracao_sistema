@@ -1,4 +1,4 @@
-<?php include_once __DIR__ . '/../includes/head.php' ?>
+<?php include_once __DIR__ . '/../includes/head.php'; ?>
 
 <style>
     .loader {
@@ -20,6 +20,7 @@
         display: block;
     }
 </style>
+
 <!-- Modal -->
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -28,6 +29,15 @@
                 <h1 class="modal-title fs-5" id="exampleModalLabel">Duplicar Modelo</h1>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            <!-- <form method="post" id="form-duplica-modelo">
+                <input type="hidden" id="id-modelo-duplicar">
+                <div class="modal-body">
+                    <label for="nome-modelo">Nome Modelo</label>
+                    <input type="text" id="nome-modelo" name="nome-modelo" class="form-control form-sm">
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+            </form> -->
             <form method="post" id="form-duplica-modelo">
                 <input type="hidden" id="id-modelo-duplicar">
                 <div class="modal-body">
@@ -36,17 +46,18 @@
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
             </form>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            <!-- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button> -->
         </div>
     </div>
-</div>
 </div>
 <!--  -->
 
 <div class="card col-12" id="bodyConversao">
     <div class="card-header">Conversão</div>
-    <div class="card-body">
+    <div class="card-body d-flex">
 
         <div class="card col-md-6 col-sm-12 p-2 gap-2">
             <form id="id_form" action="conversao/store" method="post">
@@ -93,22 +104,27 @@
                     Duplicar modelo
                 </button>
             </div>
+            <div class="d-none" id="btn_processa_arquivo">
+                <button type="button" onclick="processaArquivo()" class="btn btn-primary btn-sm d-flex">Processa arquivo</button>
+            </div>
         </div>
 
-        <div class="d-none" id="btn_processa_arquivo">
-            <button type="button" onclick="processaArquivo()" class="btn btn-primary btn-sm d-flex">Processa arquivo</button>
-        </div>
 
+        <div class="d-none" id="div_btn_processados_arquivo">
+            <div class="col-6 d-flex flex-column gap-2">
+                <p>Faça download dos arquivos processados:</p>
+                <!-- <button onclick="baixarArquivo('Corretos')" class="btn btn-secondary btn-sm">Corretor</button> -->
+                <button onclick="baixarArquivo('Criticados')" class="btn btn-secondary btn-sm">Criticados</button>
+                <button onclick="baixarArquivo('Todos')" class="btn btn-secondary btn-sm">Todos</button>
+            </div>
+        </div>
     </div>
-    <div class="d-none" id="div_btn_processados_arquivo">
-        <div class="col-6 d-flex flex-column gap-2">
-            <p>Faça download dos arquivos processados:</p>
-            <button onclick="baixarArquivo('Corretos')" class="btn btn-secondary btn-sm">Corretor</button>
-            <button onclick="baixarArquivo('Criticados')" class="btn btn-secondary btn-sm">Criticados</button>
-            <button onclick="baixarArquivo('Todos')" class="btn btn-secondary btn-sm">Todos</button>
-        </div>
+    <span id="msg-progresso"></span>
+    <div id="progress" class="progress d-none">
+        <div id="barra" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
     </div>
 </div>
+
 
 <div class="col-12 word-wrap overflow-auto mt-4 m-2" id="div_arquivo_convertido"></div>
 <div class="col-12 overflow-auto mt-2">
@@ -164,11 +180,19 @@
 </div>
 <!--  -->
 
+
+
+
 <?php include_once __DIR__ . '/../includes/scripts.php' ?>
 <script rel="stylesheet" src="../../app/core/js/functions.js?version=<?= $version ?>"></script>
 <script rel="stylesheet" src="../../views/js/metodos_axios.js?version=<?= $version ?>"></script>
 <script rel="stylesheet" src="../../views/js/functions.js?version=<?= $version ?>"></script>
 <script rel="stylesheet" src="../../views/conversao/conversao_index.js?version=<?= $version ?>"></script>
+<!-- <script>
+    const script = document.createElement("script");
+    script.src = "../../views/conversao/conversao_index.js?version=" + Date.now();
+    document.head.appendChild(script);
+</script> -->
 <script>
     var modelo = <?= json_encode($modelo) ?>;
     var modelos_colunas = <?= json_encode($modelos_colunas) ?>;

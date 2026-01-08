@@ -1,6 +1,6 @@
 <?php
 include_once __DIR__ . ('/../../app/core/includes.php');
-$version = '1.' . date("i");
+$version =  date("dmYHis");
 
 $caminho_sistema = __DIR__ . '/../../';
 ?>

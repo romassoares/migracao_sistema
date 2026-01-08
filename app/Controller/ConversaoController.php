@@ -2,7 +2,6 @@
 include_once(__DIR__ . '/../core/includes.php');
 include_once(__DIR__ . '/../../routes/navigate.php');
 
-ini_set('memory_limit', '512M');
 
 function index()
 {
@@ -179,10 +178,6 @@ function EditVinculacaoArquivo($data)
 
     $tmpFile = __DIR__ . '/../../assets/' . $_SESSION['company']['nome'] . '/' . $resultado->nome_modelo . '/' . $resultado->id_modelo . '/' . $resultado->nome_arquivo;
 
-    // var_dump($resultado->nome_arquivo);
-    // var_dump(scandir(__DIR__ . '/../../assets/' . $_SESSION['company']['nome'] . '/' . $resultado->nome_modelo . '/' . $resultado->id_modelo . '/'));
-    // die;
-
     $extension_file = pathinfo($resultado->nome_arquivo, PATHINFO_EXTENSION);
 
     if (!file_exists($tmpFile))
@@ -257,12 +252,14 @@ function deparaIndex()
     $regras = [
         'id_layout_coluna' => ['required' => true, 'type' => 'int'],
         'id_modelo' => ['required' => true, 'type' => 'int'],
+        'id_arquivo' => ['required' => true, 'type' => 'int'],
         'success' => ['required' => false, 'type' => 'int']
     ];
     $request = validateRequest($_GET, $regras);
 
     $id_layout_coluna = $request['dados']['id_layout_coluna'];
     $id_modelo = $request['dados']['id_modelo'];
+    $id_arquivo = $request['dados']['id_arquivo'];
 
 
     // echo "<pre>";
@@ -291,6 +288,7 @@ function deparaIndex()
             'tipo' => $tipo->tipo,
             'id_layout_coluna' => $id_layout_coluna,
             'id_modelo' => $id_modelo,
+            'id_arquivo' => $id_arquivo,
             'concorrente' => $concorrente->nome,
             'layout' => $layout->nome,
             'descricao_coluna' => $coluna->descricao_coluna

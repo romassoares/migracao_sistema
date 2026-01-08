@@ -7,6 +7,7 @@ async function method_post(url, data) {
             method: "POST",
             url: url,
             data: data,
+            withCredentials: true,
             headers: isFormData
                 ? { 'Content-Type': 'multipart/form-data' }
                 : { 'Content-Type': 'application/json' },

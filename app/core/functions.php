@@ -1,4 +1,193 @@
 <?php
+
+function normalize_and_fix_sql($sql, $codigoInfoideias)
+{
+    $table = '';
+    // Normalize line breaks
+    $sql = str_replace(["\r\n", "\r"], "\n", $sql);
+
+    // Fix CREATE TABLE as before
+    $sql = preg_replace_callback(
+        '/(CREATE\s+TABLE\s+[`"]?[\w\d_]+[`"]?\s*\()(.*?)(\)\s*ENGINE=.*?;)/is',
+        function ($m) {
+            $start = $m[1];
+            $columns = trim($m[2]);
+            $end = $m[3];
+            if (stripos($columns, 'codigo_infoideias') === false) {
+                $columns = rtrim($columns, ", \n\t\r");
+                $columns .= ",\n  `codigo_infoideias` VARCHAR(20) DEFAULT NULL";
+            }
+            return $start . $columns . $end;
+        },
+        $sql
+    );
+
+    // Fix INSERT INTO
+    $sql = preg_replace_callback(
+        '/INSERT\s+INTO\s+[`"]?([\w\d_]+)[`"]?\s*\((.*?)\)\s*VALUES\s*(.*?)(?=(?:INSERT|CREATE|UPDATE|DELETE|$))/is',
+        // '/INSERT\s+INTO\s+[`"]?([\w\d_]+)[`"]?\s*\((.*?)\)\s*VALUES\s*(.*)/is',
+        function ($m) use ($codigoInfoideias) {
+            $table = trim($m[1]);
+            $cols = trim($m[2]);
+            $values_block = RemoveStrangeCharacter(trim($m[3]));
+
+            // Convert "" to NULL
+            $values_block = preg_replace_callback(
+                '/"((?:[^"\\\\]|\\\\.)*)"/s',
+                function ($x) {
+                    $val = str_replace('"', "'", $x[1]);
+                    $val = str_replace('\\"', '"', $val);
+                    return "'" . $val . "'";
+                },
+                $values_block
+            );
+
+            // Add the new column if missing
+            if (stripos($cols, 'codigo_infoideias') === false) {
+                $cols = rtrim($cols, ', ') . ', `codigo_infoideias`';
+            }
+
+            $new_values = [];
+            $len = strlen($values_block);
+            $buffer = '';
+            $in_string = false;
+            $string_char = '';
+            $paren_count = 0;
+
+            // Parse the values block character by character
+            for ($i = 0; $i < $len; $i++) {
+                $c = $values_block[$i];
+
+                if ($in_string) { // Inside a string
+                    $buffer .= $c;
+                    if ($c === $string_char && $values_block[$i - 1] !== '\\') { // End of string
+                        $in_string = false;
+                    }
+                } else {
+                    // Not in a string
+                    if ($c === '"' || $c === "'") {
+                        $in_string = true;
+                        $string_char = $c;
+                        $buffer .= $c;
+                    } elseif ($c === '(') { // Start of tuple
+                        $paren_count++;
+                        $buffer .= $c;
+                    } elseif ($c === ')') { // End of tuple
+                        $paren_count--;
+                        $buffer .= $c;
+
+                        if ($paren_count === 0) {
+                            // End of tuple
+                            $tuple = trim($buffer, " \n\t");
+                            // Add new value before closing )
+                            $tuple = rtrim($tuple, ')') . ", '" . addslashes($codigoInfoideias) . "')";
+                            $new_values[] = $tuple;
+                            $buffer = '';
+                        }
+                    } else {
+                        $buffer .= $c;
+                    }
+                }
+            }
+
+            return "INSERT INTO `$table` ($cols) VALUES \n" . implode(",\n", $new_values) . ";";
+        },
+        $sql
+    );
+    // writeInFileLog($sql);
+    // Remove apenas INSERTs vazios (sem valores)
+    $sql = preg_replace('/INSERT\s+INTO\s+[`"\w]+[`"]?\s*\([^)]*\)\s*VALUES\s*;\s*/is', '', $sql);
+
+    // Limpa sobras de formatação
+    $sql = preg_replace([
+        '/,\s*,+/',
+        '/,\s*;/',
+        '/\(\s*,/',
+        '/,\s*\)/'
+    ], [
+        ',',
+        ';',
+        '(',
+        ')'
+    ], $sql);
+
+    return ['sql' => $sql, 'table' => $table];
+}
+
+
+
+// function process_insert_block($insert, $codigo_infoideias)
+// {
+//     // Garante ponto e vírgula no final
+//     if (substr(rtrim($insert), -1) !== ';') {
+//         $insert = rtrim($insert, ',') . ';';
+//     }
+
+//     // Separa cabeçalho e valores
+//     if (!preg_match('/^INSERT\s+INTO\s+[`"]?([\w\d_]+)[`"]?\s*(\([^)]+\))?\s*VALUES\s*(.+);$/is', $insert, $m)) {
+//         return $insert; // retorna original se não casar
+//     }
+
+//     $table = $m[1];
+//     $columnsRaw = isset($m[2]) ? trim($m[2]) : '';
+//     $valuesRaw = trim($m[3]);
+
+//     $hasColumns = $columnsRaw !== '';
+//     if ($hasColumns) {
+//         $columns = rtrim(ltrim($columnsRaw, '('), ')');
+//         if (stripos($columns, 'codigo_infoideias') === false) {
+//             $columns .= ',`codigo_infoideias`';
+//         }
+//     }
+
+//     // Divide cada grupo de valores
+//     $valuesGroups = [];
+//     $level = 0;
+//     $current = '';
+//     $in_quotes = false;
+//     $len = strlen($valuesRaw);
+
+//     for ($i = 0; $i < $len; $i++) {
+//         $ch = $valuesRaw[$i];
+//         if ($ch === '"' && ($i == 0 || $valuesRaw[$i - 1] !== '\\')) {
+//             $in_quotes = !$in_quotes;
+//         }
+//         if (!$in_quotes) {
+//             if ($ch === '(') $level++;
+//             if ($ch === ')') $level--;
+//         }
+//         $current .= $ch;
+//         if ($level === 0 && !$in_quotes && trim($current) !== '') {
+//             $valuesGroups[] = trim($current, ", ");
+//             $current = '';
+//         }
+//     }
+
+//     // Adiciona o codigo_infoideias em cada grupo
+//     $newValues = [];
+//     foreach ($valuesGroups as $group) {
+//         $group = trim($group, '() ');
+//         // substitui "" → NULL
+//         $group = preg_replace('/""/', 'NULL', $group);
+//         // converte "texto" para 'texto'
+//         $group = preg_replace_callback('/"([^"]*)"/', function ($m) {
+//             $val = trim($m[1]);
+//             if ($val === '') return 'NULL';
+//             $val = str_replace("'", "''", $val);
+//             return "'$val'";
+//         }, $group);
+//         $group .= ",'$codigo_infoideias'";
+//         $newValues[] = "($group)";
+//     }
+
+//     if ($hasColumns)
+//         return "INSERT INTO `$table` ($columns) VALUES " . implode(",", $newValues) . ";";
+//     else
+//         return "INSERT INTO `$table` VALUES " . implode(",", $newValues) . ";";
+// }
+
+
+
 function trata_json_request($json)
 {
 
@@ -69,7 +258,11 @@ function validateRequest($data_post, $regras)
         }
 
         if ($regra['type'] == "check") {
-            // dd($data_post[$campo]);
+            // if ($campo == "obrigatorio") {
+            //     var_dump($campo);
+            //     var_dump($data_post);
+            //     die;
+            // }
             $valor = is_null($data_post[$campo]) ? '0' : '1';
             $dados[$campo] = $valor;
             // continue;
@@ -88,12 +281,6 @@ function validateRequest($data_post, $regras)
             $erros .= "O campo '$campo' é obrigatório.<br/>";
             continue;
         }
-
-
-        // if ($regra['type'] !== 'array')
-        //     $valor = htmlspecialchars($valor, ENT_QUOTES, 'UTF-8');
-
-
     }
 
     return [
@@ -202,188 +389,6 @@ function monta_array($item, &$flattened, $prefix = '')
 }
 
 
-
-function removeEmojis($text)
-{
-    $corrigido = preg_replace('/[\x{1F600}-\x{1F64F}]|' .   // Emojis padrão
-        '[\x{1F300}-\x{1F5FF}]|' .   // Símbolos e pictogramas
-        '[\x{1F680}-\x{1F6FF}]|' .   // Transporte e mapas
-        '[\x{2600}-\x{26FF}]|' .     // Símbolos diversos
-        '[\x{2700}-\x{27BF}]|' .     // Dingbats
-        '[\x{1F1E6}-\x{1F1FF}]|' .   // Bandeiras
-        '[\x{1F900}-\x{1F9FF}]|' .   // Suplementos (novos emojis)
-        '[\x{1FA70}-\x{1FAFF}]|' .   // Suplemento adicional
-        '[\x{1F018}-\x{1F270}]|' .   // Diversos
-        '[\x{238C}-\x{2454}]|' .     // Símbolos técnicos
-        '[\x{20D0}-\x{20FF}]|' .     // Marcas combinantes
-        '[\x{FE0F}]' .               // Variation Selector-16
-        '/u', '', $text);
-
-    $corrigido = preg_replace('/[\p{So}\p{Cn}]+/u', '', $corrigido);
-    $corrigido = preg_replace('/\p{Mn}+/u', '', $corrigido);
-    return $corrigido;
-}
-
-function removeBOM($text)
-{
-    if (substr($text, 0, 3) === "\xEF\xBB\xBF") {
-        $text = substr($text, 3);
-    }
-    return $text;
-}
-
-// ---------------------------------------------------------------------------------
-function convertToUtf8($string)
-{
-    if (empty($string)) return $string;
-
-    $detectedCharset = mb_detect_encoding($string, ['UTF-8', 'ISO-8859-1', 'Windows-1252', 'ASCII', 'UCS-2'], true);
-
-    if ($detectedCharset == 'UCS-2') {
-        $detectedCharset = 'UCS-2LE';
-        $string = utf8_encode($string);
-    } else {
-        $string = mb_convert_encoding($string, "UTF-8", $detectedCharset);
-    }
-
-    return $string;
-}
-
-function RemoveStrangeCharacter($string)
-{
-    $string = removeBOM($string);
-
-    $string = convertToUtf8($string);
-
-    $replacePairs = array(
-        '‡Ã' => 'O',
-        'Ã' => 'Í',
-        'Ã“' => 'Ó',
-        'Ã‡' => 'Ç',
-        'Ã”' => 'Ô',
-        'Ã‰' => 'É',
-        'Ãƒ' => 'Ã',
-        'ÃŠ' => 'Ê',
-        'Ã€' => 'À',
-        'Ã•' => 'Õ',
-        'Ãš' => 'Ú',
-        'Ã›' => 'Û',
-        'Ãœ' => 'Ü',
-        'Ã„' => 'Ä',
-        'Ã‹' => 'Ë',
-        'ÃŒ' => 'Ì',
-        'ÃŽ' => 'Î',
-        'Ã¯' => 'Ï',
-        'Ã³' => 'ó',
-        'Ã§' => 'ç',
-        'Ã¢' => 'â',
-        'Ãª' => 'ê',
-        'Ã¡' => 'á',
-        'Ã©' => 'é',
-        'Ã´' => 'ô',
-        'Ã£' => 'ã',
-        'Ãº' => 'ú',
-        'Ã¹' => 'ù',
-        'Ã»' => 'û',
-        'Ã¼' => 'ü',
-        'Ã¤' => 'ä',
-        'Ã«' => 'ë',
-        'Ã®' => 'î',
-        'Ã¬' => 'ì',
-        'Â²' => '²',
-        'Ã ' => 'à',
-        'â€“' => '–',
-        'â€”' => '—',
-        'â€˜' => '‘',
-        'â€™' => '’',
-        'â€œ' => '“',
-        'â€' => '”',
-        'â€¢' => '•',
-        'â€¦' => '…',
-        'â€' => '†',
-        'Â©' => '©',
-        'Â®' => '®',
-        'Â±' => '±',
-        'Âµ' => 'µ',
-        'Â¥' => '¥',
-        'Â§' => '§',
-        'Â«' => '«',
-        'Â»' => '»',
-        'Â°' => '°',
-        'Â¶' => '¶',
-        'Ã½' => 'ý',
-        'Ã¿' => 'ÿ',
-        'Ã–' => 'Ö',
-        'ÃŸ' => 'ß',
-        'Ã†' => 'Æ',
-        'Ã˜' => 'Ø',
-        'Ã…' => 'Å',
-        'Ã²' => 'ò',
-        'Ã­' => 'í',
-        'Â¾' => '¾',
-        'Â½' => '½',
-        'Â¼' => '¼',
-        'Â¢' => '¢',
-        'Â£' => '£',
-        'Â¤' => '¤',
-        'Â¬' => '¬',
-        'â‚¬' => '€',
-        'â„¢' => '™'
-    );
-    $search = array_keys($replacePairs);
-    $replace = array_values($replacePairs);
-    $string = mb_str_replace($search, $replace, $string);
-
-    $string = str_replace("•", " - ", $string);
-    $string = str_replace("\u2060", " ", $string);
-    $string = preg_replace('/\x{2060}/u', '', $string);
-    $string = preg_replace('/\x{0303}/u', '', $string);
-    $string = str_replace("\xCC\x83", " ", $string);
-    $string = str_replace("➊", "1- ", $string);
-    $string = str_replace("➋", "2- ", $string);
-    $string = str_replace("➌", "3- ", $string);
-    $string = str_replace("✦", "* ", $string);
-    $string = str_replace("✔", " - ", $string);
-    $string = str_replace("⩗", " - ", $string);
-    $string = str_replace("✅", " - ", $string);
-    $string = str_replace("2️⃣", " - ", $string);
-    $string = str_replace("1️⃣", " - ", $string);
-    $string = str_replace("⛱️", " ", $string);
-    $string = str_replace("→", " ", $string);
-
-    $string = preg_replace('/[\x{2060}\x{0303}\x{FE0F}]/u', '', $string);
-
-    $string = removeEmojis($string);
-    $string = preg_replace('/[^\PC\s]/u', '', $string);
-
-    if (class_exists('Normalizer')) {
-        $string = Normalizer::normalize($string, Normalizer::FORM_C);
-    }
-
-    $string = preg_replace('/\x{FE0F}/u', '', $string);
-    return $string;
-}
-
-function mb_str_replace($search, $replace, $subject)
-{
-    foreach ($search as $key => $value) {
-        $count = 0;
-        $subject = mb_str_replace_helper($search[$key], $replace[$key], $subject, $count);
-    }
-    return $subject;
-}
-
-function mb_str_replace_helper($search, $replace, $subject, &$count)
-{
-    $searchLen = mb_strlen($search);
-    while (($position = mb_stripos($subject, $search)) !== false) {
-        $subject = mb_substr($subject, 0, $position) . $replace . mb_substr($subject, $position + $searchLen);
-        $count++;
-    }
-    return $subject;
-}
-
-
 function refValues($arr)
 {
     $refs = [];
@@ -428,7 +433,8 @@ function parseDateFlexible($value)
 {
     // troca "/" por "-" para ajudar o DateTime a entender
     $normalized = str_replace('/', '-', trim($value));
-
+    $value = str_replace('dataed_', '', $value);
+    // $value = ltrim($value, '-');
     try {
         $date = new DateTime($normalized);
         return $date;

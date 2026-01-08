@@ -13,6 +13,9 @@ function index()
     $sql = "SELECT * FROM layout_colunas where id_layout = $id ORDER BY posicao asc";
     $layout_colunas = metodo_all($sql, 'migracao');
 
+    // dd($layout_colunas);
+    // die;
+
     $ids_order = [];
 
     foreach ($layout_colunas as $item) {
@@ -26,6 +29,8 @@ function index()
 
 function edit()
 {
+
+
 
     $regras = [
         'id_layout' => ['required' => true, 'type' => 'string'],
@@ -54,6 +59,9 @@ function edit()
 
     if (!is_null($layout_coluna->flags))
         $layout_coluna->flags = trata_group_concat((array) $layout_coluna->flags, 'flags');
+
+    // var_dump($id_layout, $id_layout_coluna);
+    // die;
 
     return ['view' => 'layout/colunas/form', 'data' => ['layout_coluna' => $layout_coluna], 'function' => ''];
 }
@@ -98,12 +106,20 @@ function update()
         'nome_exibicao' => ['required' => true, 'type' => 'string'],
         'tipo' => ['required' => true, 'type' => 'string'],
         'ativo' => ['required' => true, 'type' => 'check'],
-        'obrigatorio' => ['required' => true, 'type' => 'check'],
+        'obrigatorio' => ['required' => false, 'type' => 'check'],
         'conteudo' => ['required' => false, 'type' => 'array'],
         'conteudoNew' => ['required' => false, 'type' => 'array']
     ];
-    $request = validateRequest($_POST, $regras);
 
+    $_POST['obrigatorio'] = isset($_POST['obrigatorio']) ? $_POST['obrigatorio'] : 'off';
+
+    // var_dump('<pre>');
+    // var_dump($_POST);
+    // var_dump($regras);
+    // var_dump('</pre>');
+    // die;
+
+    $request = validateRequest($_POST, $regras);
     $dados = $request['dados'];
 
     $id_layout = $dados['id_layout'];
@@ -112,18 +128,23 @@ function update()
     // =======================================================================
     // =======================================================================
 
+    // dd($dados['conteudo']);
     if (isset($dados['conteudo']) && count($dados['conteudo']) > 0) {
         $qnt_items_conteudo = count($dados['conteudo']['colunas_conteudo_id']);
         $colunas_conteudo_id = $dados['conteudo']['colunas_conteudo_id'];
         $nomes_data = $dados['conteudo']['nome'];
         $decricao_data = $dados['conteudo']['descricao'];
-
+        // echo ($qnt_items_conteudo);
+        // die;
         for ($i = 0; $i < $qnt_items_conteudo; $i++) {
             $conteudo = $nomes_data[$i];
             $descricao = $decricao_data[$i];
             $id = $colunas_conteudo_id[$i];
 
             $sqlBaseUpdate = "UPDATE layout_coluna_conteudos SET conteudo = '$conteudo', descricao = '$descricao' WHERE id_layout_colunas = $id_layout_coluna AND id = $id";
+            var_dump($colunas_conteudo_id);
+            die;
+            // dd($sqlBaseUpdate);
             $db->connect('migracao')->query($sqlBaseUpdate);
         }
     }

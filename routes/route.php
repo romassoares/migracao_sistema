@@ -11,22 +11,6 @@ $uri = $_SERVER['REQUEST_URI'];
 $uri = parse_url($uri, PHP_URL_PATH);
 
 $uri = trim($uri, '/');
-// dd($uri);
-
-// $uri = str_replace('', '', $uri);
-// $uri = str_replace('migracao_sistema/', '', $uri);
-
-// if (!isAuthenticated())
-//     return redirect('auth/login');
-
-// if (!companySelected())
-//     return redirect('auth/selectCompany');
-
-// notdie($uri);
-// if (strpos($uri, $_SESSION['rota_atual']) === 0) {
-//     $uri = substr($uri, strlen($_SESSION['rota_atual']));
-//     $uri = ltrim($uri, '/'); // remove a barra inicial se existir
-// }
 
 switch ($uri) {
     case '':
@@ -132,6 +116,22 @@ switch ($uri) {
         lerArquivo();
         break;
 
+    case 'vista/index':
+        redirect('vista/index');
+        break;
+
+    case 'vista/store':
+        redirect('vista/store');
+        break;
+
+    case 'vista/editarModelo':
+        redirect('vista/editarModelo');
+        break;
+
+    case 'status/processo':
+        echo json_encode(file_get_contents(__DIR__ . '/../app/Jobs/status/status.json'));
+        break;
+
     default:
         if (!isAuthenticated()) {
             header('Location: /auth/login');
@@ -140,6 +140,7 @@ switch ($uri) {
             header('Location: /auth/companys');
             exit();
         }
+        var_dump($uri);
         die('view not found');
         break;
 }

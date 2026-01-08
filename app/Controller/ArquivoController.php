@@ -46,10 +46,6 @@ function lerArquivo()
     // if (ftp_put($connection, $remoteFile, $tmpFile, FTP_BINARY)) {
     //     ftp_close($connection);
 
-    // converte arquivo para array
-    $convert = new ConvertService();
-    $converted = $convert->converter($tmpFile, $extension_file, $modelo->descr_tipo_arquivo);
-
     //definição do diretório base
     $dir_base = __DIR__ . '/../../assets/' . $_SESSION['company']['nome'] . '/' . $modelo->nome_modelo . '/' . $modelo->id_modelo . '/';
 
@@ -63,6 +59,10 @@ function lerArquivo()
         return;
     }
 
+    // converte arquivo para array
+    $convert = new ConvertService();
+    $converted = $convert->converter($tmpFile, $extension_file, $modelo->descr_tipo_arquivo);
+
     return_api(200, '', [
         'arquivo_convertido' => $converted,
         'modelo' => $modelo,
@@ -75,30 +75,43 @@ function downloadArquivo($data)
 {
     $modelo = metodo_get("SELECT * FROM modelos WHERE id_modelo =" . $data['id_modelo'], 'migracao');
 
-    if (!isset($modelo->id_modelo)) return return_api(200, 'Modelo não encontrado', []);
+    if (!isset($modelo->id_modelo)) {
+        return return_api(200, 'Modelo não encontrado', []);
+    }
 
-    $nome_arquivo_download = $_SESSION['company']['nome'] . '_' . $modelo->nome_modelo . "_" . $modelo->id_modelo . "_" . ucfirst($data['tipo']) . ".xlsx";
+    // Define o nome do arquivo para download
+    $nome_arquivo_download = $_SESSION['company']['nome'] . '_' . $modelo->nome_modelo . "_" . $modelo->id_modelo . "_" . ucfirst($data['tipo']);
+    $nome_arquivo_download .= ($data['tipo'] == 'Criticados') ? '.txt' : '.xlsx';
 
+    // Caminho físico do arquivo
     $arquivo = __DIR__ . "/../../assets/convertidos/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/{$modelo->id_modelo}/" . $nome_arquivo_download;
 
-    // notdie($nome_arquivo_download);
-    // dd(scandir(__DIR__ . "/../../assets/convertidos/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/{$modelo->id_modelo}/"));
+    // Verifica se o arquivo existe
+    if (!file_exists($arquivo)) {
+        return return_api(404, 'Arquivo não encontrado', []);
+    }
 
     // Limpa buffers para evitar caracteres extras antes do download
     if (ob_get_level()) ob_end_clean();
 
+    // Define o tipo de conteúdo de acordo com o tipo de arquivo
+    if ($data['tipo'] == 'Criticados') {
+        // TXT
+        header('Content-Type: text/plain; charset=UTF-8');
+    } else {
+        // Excel
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+
     header('Content-Description: File Transfer');
-    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment; filename="' . basename($nome_arquivo_download) . '"');
     header('Content-Transfer-Encoding: binary');
-    // header('Expires: 0');
-    // header('Cache-Control: must-revalidate');
-    // header('Pragma: public');
     header('Content-Length: ' . filesize($arquivo));
 
-    flush(); // força envio dos headers
+    // Envia o arquivo para o cliente
+    flush();
     readfile($arquivo);
-    exit; // garante que nada mais será executado após o download
+    exit;
 }
 
 function uploadArquivo()
@@ -115,11 +128,6 @@ function uploadArquivo()
         LEFT JOIN concorrentes as c ON m.id_concorrente = c.id
         WHERE id_modelo = $id_modelo";
         $modelo = metodo_get($sql, 'migracao');
-
-        // ===============================================================
-
-        $sql_layout_colunas = "SELECT * FROM layout_colunas WHERE id_layout = " . $modelo->id_layout . " ORDER BY posicao ASC";
-        $layout_colunas = metodo_all($sql_layout_colunas, 'migracao');
 
         // ===============================================================
 
@@ -147,14 +155,8 @@ function uploadArquivo()
         // if (ftp_put($connection, $remoteFile, $tmpFile, FTP_BINARY)) {
         //     ftp_close($connection);
 
-        // converte arquivo para array
-        $convert = new ConvertService();
-        $converted = $convert->converter($tmpFile, $extension_file, $modelo->descr_tipo_arquivo);
-
         // =================================================
         // =================================================
-
-        $qntItems = count($converted[1]);
 
         //definição do diretório base
         $dir_base = __DIR__ . '/../../assets/' . $_SESSION['company']['nome'] . '/' . $modelo->nome_modelo . '/' . $modelo->id_modelo . '/';
@@ -163,22 +165,22 @@ function uploadArquivo()
         if (!file_exists($dir_base))
             mkdir($dir_base, 0777, true);
 
+        $nomeArquivoCopiado = $nomeArquivo . '_' . date('i') . '_' . date('s') . '.' . $extension_file;
         //verifica se o arquivo já existe, se existir adiciona a data e hora
-        if (!copy($tmpFile, $dir_base . $nomeArquivo . '_' . date('i') . '_' . date('s') . '.' . $extension_file)) {
+        if (!copy($tmpFile, $dir_base . $nomeArquivoCopiado)) {
             return_api(404, 'Error ao salvar arquivo', []);
             return;
         }
 
-        $nomeArquivoCopiado = $nomeArquivo . '_' . date('i') . '_' . date('s') . '.' . $extension_file;
 
         // =================================================
         // =================================================
 
         // Buscar se já existe o arquivo
-        $sql_exist_arquivo = metodo_get(
-            "SELECT id_arquivo FROM arquivos WHERE id_cliente = " . $_SESSION['company']['id'] . " AND id_modelo =  $modelo->id_modelo",
-            'migracao'
-        );
+        // $sql_exist_arquivo = metodo_get(
+        //     "SELECT id_arquivo FROM arquivos WHERE id_cliente = " . $_SESSION['company']['id'] . " AND id_modelo =  $modelo->id_modelo",
+        //     'migracao'
+        // );
 
         $binds_arquivo = '';
         $dados_arquivos = [];
@@ -198,27 +200,22 @@ function uploadArquivo()
         // } else {
         // Insere novo arquivo
         $sql = "INSERT INTO arquivos 
-            (nome_arquivo, quantidade_registros, id_cliente, id_modelo, status) 
-            VALUES (?, ?, ?, ?, ?)";
-        $binds_arquivo = 'siiis';
+            (nome_arquivo, id_cliente, id_modelo, status) 
+            VALUES (?, ?, ?, ?)";
+        $binds_arquivo = 'siis';
         $dados_arquivos = [
             $nomeArquivoCopiado,
-            $qntItems,
             $_SESSION['company']['id'],
             $modelo->id_modelo,
             'E'
         ];
         // }
 
-        insert_update($sql, $binds_arquivo, $dados_arquivos, 'migracao');
+        $id_arquivo = insert_update($sql, $binds_arquivo, $dados_arquivos, 'migracao');
 
         // =================================================
         // =================================================
 
-        return_api(200, '', [
-            'arquivo_convertido' => $converted,
-            'layout_colunas' => $layout_colunas,
-            'modelo' => $modelo
-        ]);
+        return_api(200, '', ['id_arquivo' => $id_arquivo]);
     }
 }

@@ -77,7 +77,44 @@ switch ($uri) {
 
     // ==============================================
     case 'modelo/processaArquivo':
-        require $baseDir . 'ModeloController.php';
+        $debug = false;
+
+        $id = uniqid("job_", true);
+
+        if ($debug) {
+            require __DIR__ . '/../app/Jobs/worker.php';
+        } else {
+
+            file_put_contents(__DIR__ . '/../app/Jobs/status/status.json', json_encode([
+                "status"   =>  "processing",
+                "progress" => 1,
+                "message"  => 'Iniciando...'
+            ], JSON_PRETTY_PRINT));
+
+            $worker = __DIR__ . '/../app/Jobs/worker.php';
+
+            $json = base64_encode(json_encode($data));
+            $sessionEncoded = base64_encode(json_encode($_SESSION));
+            // var_dump($sessionEncoded);
+            // die;
+            $cmd = "C:\php83\php.exe \"$worker\" "
+                . escapeshellarg($id) . " "
+                . escapeshellarg(realpath(__DIR__ . "/../app/")) . " "
+                . escapeshellarg($sessionEncoded) . " "
+                . escapeshellarg($json);
+
+            pclose(popen("start /B " . $cmd, "r"));
+        }
+
+        return_api(200, '', [
+            "jobId" => $id
+        ]);
+        break;
+    // ==============================================
+
+    // ==============================================
+    case 'vista/processarArquivo':
+        require $baseDir . 'VistaController.php';
         $explodeUri[1]($data);
         break;
 
@@ -88,5 +125,5 @@ switch ($uri) {
         break;
 
     default:
-        return_api(404, 'not found');
+        return_api(404, 'not found Api');
 }

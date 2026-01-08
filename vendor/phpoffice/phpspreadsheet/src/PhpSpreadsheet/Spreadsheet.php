@@ -2,6 +2,8 @@
 
 namespace PhpOffice\PhpSpreadsheet;
 
+ini_set('memory_limit', '2G');
+
 use JsonSerializable;
 use PhpOffice\PhpSpreadsheet\Calculation\Calculation;
 use PhpOffice\PhpSpreadsheet\Cell\IValueBinder;
@@ -342,7 +344,7 @@ class Spreadsheet implements JsonSerializable
                     && isset($this->ribbonBinObjects['data']) && is_array($this->ribbonBinObjects['data'])
                 ) {
                     $tmpTypes = array_keys($this->ribbonBinObjects['data']);
-                    $ReturnData = array_unique(array_map(fn (string $path): string => pathinfo($path, PATHINFO_EXTENSION), $tmpTypes));
+                    $ReturnData = array_unique(array_map(fn(string $path): string => pathinfo($path, PATHINFO_EXTENSION), $tmpTypes));
                 } else {
                     $ReturnData = []; // the caller want an array... not null if empty
                 }
@@ -840,7 +842,7 @@ class Spreadsheet implements JsonSerializable
     {
         return array_filter(
             $this->definedNames,
-            fn (DefinedName $definedName): bool => $definedName->isFormula() === self::DEFINED_NAME_IS_RANGE
+            fn(DefinedName $definedName): bool => $definedName->isFormula() === self::DEFINED_NAME_IS_RANGE
         );
     }
 
@@ -853,7 +855,7 @@ class Spreadsheet implements JsonSerializable
     {
         return array_filter(
             $this->definedNames,
-            fn (DefinedName $definedName): bool => $definedName->isFormula() === self::DEFINED_NAME_IS_FORMULA
+            fn(DefinedName $definedName): bool => $definedName->isFormula() === self::DEFINED_NAME_IS_FORMULA
         );
     }
 

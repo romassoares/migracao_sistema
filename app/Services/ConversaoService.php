@@ -9,7 +9,6 @@ include_once __DIR__ . '/JsonToArrayService.php';
 
 class ConvertService
 {
-
     private $conversor_class;
     private $modelos_colunas;
     private $depara_rules = [];
@@ -19,7 +18,7 @@ class ConvertService
         $this->modelos_colunas = $modelos_colunas;
     }
 
-    public function converter($tmpFile, $extension_file, $descr_tipo_arquivo)
+    public function converter($tmpFile, $extension_file, $descr_tipo_arquivo, $obj = null)
     {
         if (is_array($this->modelos_colunas) && count($this->modelos_colunas) > 0) {
             $this->buscarDePara();
@@ -43,6 +42,15 @@ class ConvertService
                 $this->conversor_class = new JsonToArrayService($extension_file, $this->depara_rules);
 
             $converted = $this->conversor_class->convert($tmpFile);
+
+            if (is_null($obj)) {
+                $result = [];
+                for ($i = 0; $i < count($converted[1]); $i += 7) {
+                    $result[] = $converted[1][$i];
+                }
+
+                $converted[1] = $result;
+            }
 
             return $converted;
         } else {
