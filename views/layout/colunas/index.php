@@ -128,11 +128,11 @@ $tipos_colunas = [
                     <h6 for="obrigatorio">Obrigatório</h6>
                     <div class="d-flex gap-3">
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" id="obrigatorio_sim" name="obrigatorio" checked value="1">
+                            <input class="form-check-input" type="radio" id="obrigatorio_sim" name="obrigatorio" value="1">
                             <label class="form-check-label" for="obrigatorio">Sim</label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" id="obrigatorio_nao" name="obrigatorio" value="0">
+                            <input class="form-check-input" type="radio" id="obrigatorio_nao" name="obrigatorio" checked value="0">
                             <label class="form-check-label" for="obrigatorio">Não</label>
                         </div>
                     </div>

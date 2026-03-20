@@ -39,11 +39,14 @@ class JsonToArrayService
 
         $conteudo = $this->converterObjetosParaArray($conteudo, '');
 
-        $caminhos_absolutos = [];
-        monta_caminhos_absolutos_arquivo($conteudo, $caminhos_absolutos);
+        $headers = [];
 
-        $headers = array_unique($caminhos_absolutos);
+        /** @var string $caminho */
+        foreach (monta_caminhos_absolutos_arquivo($conteudo) as $caminho) {
+            $headers[$caminho] = true; // evita duplicação sem array_unique
+        }
 
+        $headers = array_keys($headers);
 
         return [$headers, $conteudo];
     }

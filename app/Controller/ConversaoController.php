@@ -43,8 +43,6 @@ function index()
     ], 'function' => ''];
 }
 
-
-
 function ftp_directory_exists($ftp_conn, $dir)
 {
     $file_list = ftp_nlist($ftp_conn, $dir);
@@ -186,6 +184,8 @@ function EditVinculacaoArquivo($data)
     $convert = new ConvertService($modelos_colunas);
     $converted = $convert->converter($tmpFile, $extension_file, $resultado->descr_tipo_arquivo);
 
+    // $converted[1] = limitaQtdLinhasPreview($converted);
+    $converted[1] = array_slice($converted[1], 0, 100);
     return_api(200, '', [
         'arquivo_convertido' => $converted,
         'modelos_colunas' => $modelos_colunas,

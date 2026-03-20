@@ -42,16 +42,14 @@ class ConvertService
                 $this->conversor_class = new JsonToArrayService($extension_file, $this->depara_rules);
 
             $converted = $this->conversor_class->convert($tmpFile);
+            // if (is_null($obj)) {
+            //     $result = [];
+            //     for ($i = 0; $i < count($converted[1]); $i += 7) {
+            //         $result[] = $converted[1][$i];
+            //     }
 
-            if (is_null($obj)) {
-                $result = [];
-                for ($i = 0; $i < count($converted[1]); $i += 7) {
-                    $result[] = $converted[1][$i];
-                }
-
-                $converted[1] = $result;
-            }
-
+            //     $converted[1] = $result;
+            // }
             return $converted;
         } else {
             die("arquivo não é do tipo esperado no modelo");

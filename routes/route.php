@@ -44,6 +44,9 @@ switch ($uri) {
     case 'layout/update':
         redirect('layout/update');
         break;
+    case 'layout/delete':
+        redirect('layout/delete');
+        break;
     // ==============================================
     case 'concorrente/index':
         redirect('concorrente/index');
@@ -93,6 +96,9 @@ switch ($uri) {
     case 'conversao/deletarDepara':
         redirect('conversao/deletarDepara');
         break;
+    case 'conversao/detecta-movimento':
+        return_api(200, '', []);
+        break;
     // ==============================================
     case 'modelo/index':
         redirect('modelo/index');
@@ -106,6 +112,9 @@ switch ($uri) {
     case 'modelo/detalhar':
         redirect('modelo/detalhar');
         break;
+    // case 'modelo/getModeloColunas':
+    //     redirect('modelo/getModeloColunas');
+    //     break;
 
     case 'conversao/convertidos':
         redirect('conversao/convertidos');

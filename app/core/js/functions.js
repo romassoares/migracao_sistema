@@ -37,3 +37,7 @@ function dispararEventoEmSelect(el_select, value_id) {
     const evento = new Event('change', { bubbles: true });
     el_select.dispatchEvent(evento);
 }
+
+// setInterval(() => {
+//     method_get('detecta-movimento')
+// }, 60000);

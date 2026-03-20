@@ -30,7 +30,7 @@ function writeInFileLog($text)
 
     $line = "[" . date("Y-m-d H:i:s") . "] " . $text . PHP_EOL;
 
-    if (file_put_contents($logFilePath, $line, FILE_APPEND) === false) {
+    if (file_put_contents($logFilePath, $line, FILE_APPEND | LOCK_EX) === false) {
         die("Não foi possível escrever no arquivo de log: $logFilePath");
     }
 }

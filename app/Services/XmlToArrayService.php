@@ -20,13 +20,16 @@ class XmlToArrayService
             $this->trata_objeto($tag, $record);
             $children[] = $record;
         }
-        $caminhos_absolutos = [];
-        monta_caminhos_absolutos_arquivo($children, $caminhos_absolutos);
-        // var_dump($children);
-        // die;
-        $retorno = array_unique($caminhos_absolutos);
+        $headers = [];
 
-        return [$retorno, $children];
+        /** @var string $caminho */
+        foreach (monta_caminhos_absolutos_arquivo($children) as $caminho) {
+            $headers[$caminho] = true; // evita duplicação sem array_unique
+        }
+
+        $headers = array_keys($headers);
+
+        return [$headers, $children];
     }
 
     public function trata_objeto(SimpleXMLElement $element, array &$record)

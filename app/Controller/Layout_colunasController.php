@@ -10,7 +10,7 @@ function index()
     $sql = "SELECT * FROM layout where id = $id";
     $layout = metodo_get($sql, 'migracao');
 
-    $sql = "SELECT * FROM layout_colunas where id_layout = $id ORDER BY posicao asc";
+    $sql = "SELECT * FROM layout_colunas where id_layout = $id and ativo=1 ORDER BY posicao asc";
     $layout_colunas = metodo_all($sql, 'migracao');
 
     // dd($layout_colunas);
@@ -111,7 +111,7 @@ function update()
         'conteudoNew' => ['required' => false, 'type' => 'array']
     ];
 
-    $_POST['obrigatorio'] = isset($_POST['obrigatorio']) ? $_POST['obrigatorio'] : 'off';
+    $_POST['obrigatorio'] = isset($_POST['obrigatorio']) ? $_POST['obrigatorio'] : null;
 
     // var_dump('<pre>');
     // var_dump($_POST);
@@ -121,6 +121,12 @@ function update()
 
     $request = validateRequest($_POST, $regras);
     $dados = $request['dados'];
+
+    // var_dump('<pre>');
+    // var_dump($_POST);
+    // var_dump($dados);
+    // var_dump('</pre>');
+    // die;
 
     $id_layout = $dados['id_layout'];
     $id_layout_coluna = $dados['id_layout_coluna'];
@@ -141,14 +147,16 @@ function update()
             $descricao = $decricao_data[$i];
             $id = $colunas_conteudo_id[$i];
 
-            $sqlBaseUpdate = "UPDATE layout_coluna_conteudos SET conteudo = '$conteudo', descricao = '$descricao' WHERE id_layout_colunas = $id_layout_coluna AND id = $id";
-            var_dump($colunas_conteudo_id);
-            die;
-            // dd($sqlBaseUpdate);
-            $db->connect('migracao')->query($sqlBaseUpdate);
+            if (empty($id)) {
+                $sqlBaseUpdate = "INSERT INTO layout_coluna_conteudos (conteudo,descricao,id_layout_colunas) VALUES( '$conteudo', '$descricao',$id_layout_coluna)";;
+                $db->connect('migracao')->query($sqlBaseUpdate);
+            } else {
+                $sqlBaseUpdate = "UPDATE layout_coluna_conteudos SET conteudo = '$conteudo', descricao = '$descricao' WHERE id_layout_colunas = $id_layout_coluna AND id = $id";
+
+                $db->connect('migracao')->query($sqlBaseUpdate);
+            }
         }
     }
-
     // =======================================================
     // =======================================================
 

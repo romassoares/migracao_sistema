@@ -400,34 +400,49 @@ function refValues($arr)
 
 
 // ==========================================================
-
-
-function monta_caminhos_absolutos_arquivo($items, &$caminhos_absolutos, $prefix = '')
+function monta_caminhos_absolutos_arquivo($items, $prefix = '')
 {
     foreach ($items as $key => $value) {
-        $segment = '';
         if (is_numeric($key)) {
-            if (empty($prefix)) {
-                $segment = '';
-            } else {
-                $segment = $prefix;
-            }
+            $currentPrefix = $prefix;
         } else {
-            if ($prefix === '') {
-                $segment = $key;
-            } else {
-                $segment = $prefix . '/' . $key;
-            }
+            $currentPrefix = $prefix === '' ? $key : $prefix . '/' . $key;
         }
-        $currentPrefix = $segment;
 
         if (is_array($value)) {
-            monta_caminhos_absolutos_arquivo($value, $caminhos_absolutos, $currentPrefix);
-        } elseif (is_scalar($value) || is_null($value)) {
-            $caminhos_absolutos[] = $currentPrefix;
+            yield from monta_caminhos_absolutos_arquivo($value, $currentPrefix);
+        } else {
+            yield $currentPrefix;
         }
     }
 }
+
+// function monta_caminhos_absolutos_arquivo($items, &$caminhos_absolutos, $prefix = '')
+// {
+//     foreach ($items as $key => $value) {
+//         $segment = '';
+//         if (is_numeric($key)) {
+//             if (empty($prefix)) {
+//                 $segment = '';
+//             } else {
+//                 $segment = $prefix;
+//             }
+//         } else {
+//             if ($prefix === '') {
+//                 $segment = $key;
+//             } else {
+//                 $segment = $prefix . '/' . $key;
+//             }
+//         }
+//         $currentPrefix = $segment;
+
+//         if (is_array($value)) {
+//             monta_caminhos_absolutos_arquivo($value, $caminhos_absolutos, $currentPrefix);
+//         } elseif (is_scalar($value) || is_null($value)) {
+//             $caminhos_absolutos[] = $currentPrefix;
+//         }
+//     }
+// }
 
 function parseDateFlexible($value)
 {
@@ -441,4 +456,22 @@ function parseDateFlexible($value)
     } catch (Exception $e) {
         return false; // não conseguiu interpretar
     }
+}
+
+function limitaQtdLinhasPreview($data, $maxLinhas = 300)
+{
+    if (count($data) <= $maxLinhas) {
+        return $data;
+    }
+
+    $result = [];
+    $step = floor(count($data) / $maxLinhas);
+    for ($i = 0; $i < count($data); $i += $step) {
+        $result[] = $data[$i];
+        if (count($result) >= $maxLinhas) {
+            break;
+        }
+    }
+
+    return $result;
 }

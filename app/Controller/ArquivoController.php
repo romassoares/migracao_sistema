@@ -13,7 +13,7 @@ function lerArquivo()
         WHERE id_modelo = $id_modelo";
     $modelo = metodo_get($sql, 'migracao');
 
-    $sql_layout_colunas = "SELECT * FROM layout_colunas WHERE id_layout = " . $modelo->id_layout . " ORDER BY posicao ASC";
+    $sql_layout_colunas = "SELECT * FROM layout_colunas WHERE id_layout = " . $modelo->id_layout . " and ativo=1 ORDER BY posicao ASC";
     $layout_colunas = metodo_all($sql_layout_colunas, 'migracao');
 
     $modelo_colunas = metodo_all("SELECT * FROM modelos_colunas 
@@ -62,6 +62,8 @@ function lerArquivo()
     // converte arquivo para array
     $convert = new ConvertService();
     $converted = $convert->converter($tmpFile, $extension_file, $modelo->descr_tipo_arquivo);
+
+    // $converted[1] = limitaQtdLinhasPreview($converted);
 
     return_api(200, '', [
         'arquivo_convertido' => $converted,

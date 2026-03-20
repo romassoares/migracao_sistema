@@ -14,7 +14,7 @@ $sheet = new stdClass();
 function setHeaderAndRetornColumns($modelo_colunas, $dados, $headers, $modelo,  $layout_colunas)
 {
     global $spreadsheet, $sheet, $sheetCertos, $layout_colunas_depara;
-    writeInFileLog(json_encode($modelo_colunas));
+    // writeInFileLog(json_encode($modelo_colunas));
     // Contador de colunas
     $columnsUsed = []; // Colunas que serão efetivamente usadas
     foreach ($modelo_colunas as $mc) {
@@ -57,6 +57,7 @@ function writeRowRecursive($data, $columnsUsed, $rowIndex, $ifExistErro, $prefix
     $total_colunas_por_linha = count(
         array_unique(array_column($columnsUsed, 'col'))
     );
+    // writeInFileLog($total_colunas_por_linha);    
     foreach ($columnsUsed as $c) {
         if (
             count($c['keys']) === count($prefix) + 1 &&
@@ -74,7 +75,6 @@ function writeRowRecursive($data, $columnsUsed, $rowIndex, $ifExistErro, $prefix
     // Separa listas e objetos aninhados
     $listas = [];
     $objetos = [];
-
     foreach ($data as $k => $v) {
         if (is_array($v) && array_keys($v) === range(0, count($v) - 1)) { // Lista (array indexado)
             // writeInFileLog('separando listas');
@@ -87,6 +87,7 @@ function writeRowRecursive($data, $columnsUsed, $rowIndex, $ifExistErro, $prefix
 
     // Processa listas com produto cartesiano
     if ($listas) {
+        // writeInFileLog("lista"); 
         // writeInFileLog('listas: ' . print_r($fixedValues, true));
         // debugTime('inicio  processa listas');
         $combos = cartesianProduct($listas);
@@ -134,6 +135,7 @@ function writeRowRecursive($data, $columnsUsed, $rowIndex, $ifExistErro, $prefix
 
     // Processa objetos associativos
     if ($objetos) {
+        // writeInFileLog("objetos"); 
         // writeInFileLog('objetos: ' . print_r($fixedValues, true));
         // debugTime('inicio  processa objetos');
         $antes = $rowIndex;
@@ -172,6 +174,7 @@ function writeRowRecursive($data, $columnsUsed, $rowIndex, $ifExistErro, $prefix
     // Caso final: linha simples, sem listas nem objetos
     // if ($fixedValues !== $lastRowValues && count($fixedValues) == $total_colunas_por_linha) {
     if ($fixedValues !== $lastRowValues) {
+
         // writeInFileLog('Caso final: ' . print_r($fixedValues, true));
         foreach ($fixedValues as $col => $valor) {
             setCellValueByColumnAndRow($col, $rowIndex, $valor, $ifExistErro);
@@ -278,7 +281,8 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
         throw new \InvalidArgumentException("Column index inválido: $colIndex");
 
     $cell = columnLetter($colIndex) . $rowIndex;
-
+    // writeInFileLog($value); 
+    // writeInFileLog($cell); 
     $valueCriticado = "";
 
     $valueTodos = "";
@@ -291,19 +295,7 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
         foreach ($layout_colunas_depara as $depara) {
             if (intval($depara['posicao']) == $colIndex) {
 
-                if (is_null($depara['tipo']) || strtolower($depara['tipo']) == 'livre') {
-                    if (intval($depara['obrigatorio']) == 1 && empty($value)) {
-                        $valueCriticado = $value . ' Critica: Campo é obrigatório';
-                        $valueTodos = $value;
-                        $ifExistErro = true;
-                        break;
-                    }
-                    $value = strip_tags($value);
-                    // $value = RemoveStrangeCharacter($value);
-                    // $valueCorreto = $value;
-                    $valueTodos = $value;
-                    break;
-                }
+
 
                 if ($depara['tipo'] == 'numerico') {
                     if (intval($depara['obrigatorio']) == 1 && empty($value)) {
@@ -330,6 +322,7 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
                 }
 
                 if ($depara['tipo'] == 'data' && !empty($value)) {
+                    $date = null;
                     if ($value !== '0000-00-00') {
                         $date = parseDateFlexible($value);
                     }
@@ -388,9 +381,16 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
                     }
                 }
 
-                if (empty($depara['tipo']) && is_string($depara['tipo']) && strtolower($depara['tipo']) == 'flag' && count($depara['depara']) > 0) {
+
+
+
+
+                if (empty($depara['tipo']) || (is_string($depara['tipo']) && strtolower($depara['tipo']) == 'flag') && count($depara['depara']) > 0) {
+                    // var_dump($depara, $value);
+                    // die;
                     $mapa = [];
                     foreach ($depara['depara'] as $m) {
+
                         if (strtolower($value) == strtolower($m['conteudo_de'])) {
                             $mapa[strtolower(trim($m['conteudo_de']))] = $m['Conteudo_para_livre'];
                             break;
@@ -408,6 +408,24 @@ function setCellValueByColumnAndRow($colIndex, $rowIndex, $value, $ifExistErro)
                         $ifExistErro = true;
                         break;
                     }
+                }
+
+                if (empty($depara['tipo']) || strtolower($depara['tipo']) == 'livre') {
+                    if (intval($depara['obrigatorio']) == 1 && empty($value)) {
+                        $valueCriticado = $value . ' Critica: Campo é obrigatório';
+                        $valueTodos = $value;
+                        $ifExistErro = true;
+                        break;
+                    }
+                    $value = strip_tags($value);
+
+                    if (strval($value) == "0") {
+                        $value = "";
+                    }
+                    // $value = RemoveStrangeCharacter($value);
+                    // $valueCorreto = $value;
+                    $valueTodos = $value;
+                    break;
                 }
             }
         }

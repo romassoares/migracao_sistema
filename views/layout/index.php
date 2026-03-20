@@ -23,9 +23,23 @@
                                 <td><?php echo $layout['id'] ?></td>
                                 <td><?php echo $layout['nome'] ?></td>
                                 <td>
-
-                                    <div class="d-flex">
+                                    <div class="d-flex gap-2">
                                         <a href="/layout_colunas/index?id=<?php echo $layout['id'] ?>" class="btn btn-primary btn-sm"><i class="bi bi-pencil"></i></a>
+
+                                        <a class="btn btn-danger btn-sm dropdown dropdown-toggle" id="dropdownMenuButtonDestroyLayoutConteudos" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            <i class="bi bi-trash"></i></a>
+                                        <!--  -->
+                                        <!-- dropdownMenuButtonDestroy -->
+                                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButtonDestroyLayoutConteudos">
+                                            <div class="col-sm-12 text-center">
+                                                <p><strong>Deseja realmente excluir este item?</strong></p>
+                                            </div>
+                                            <hr>
+                                            <div class="col-sm-12 text-center">
+                                                <a href="/layout/delete?id=<?php echo $layout['id'] ?>" class='btn btn-success btn-sm'>Sim</a>
+                                                <a class="btn btn-danger btn-sm">Não</a>
+                                            </div>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>

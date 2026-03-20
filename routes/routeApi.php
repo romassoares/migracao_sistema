@@ -5,6 +5,11 @@ require_once __DIR__ . '/../helpers/helpers.php';
 include_once __DIR__ . '/../session.php';
 include_once __DIR__ . '/../routes/navigate.php';
 
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 header('Content-Type: application/json');
 $json = file_get_contents('php://input');
 $data = (array) trata_json_request($json);
@@ -79,10 +84,15 @@ switch ($uri) {
     case 'modelo/processaArquivo':
         $debug = false;
 
-        $id = uniqid("job_", true);
+        $jobId = uniqid("job_", true);
+        $baseDir = realpath(__DIR__ . "/../app/");
+        $json = base64_encode(json_encode($data));
+        $sessionEncoded = base64_encode(json_encode($_SESSION));
+
+        $worker = __DIR__ . '/../app/Jobs/worker.php';
 
         if ($debug) {
-            require __DIR__ . '/../app/Jobs/worker.php';
+            require $worker;
         } else {
 
             file_put_contents(__DIR__ . '/../app/Jobs/status/status.json', json_encode([
@@ -91,15 +101,14 @@ switch ($uri) {
                 "message"  => 'Iniciando...'
             ], JSON_PRETTY_PRINT));
 
-            $worker = __DIR__ . '/../app/Jobs/worker.php';
+            // file_put_contents(
+            //     __DIR__ . '/../app/Jobs/worker_debug.log',
+            //     print_r($_SESSION, true)
+            // );
 
-            $json = base64_encode(json_encode($data));
-            $sessionEncoded = base64_encode(json_encode($_SESSION));
-            // var_dump($sessionEncoded);
-            // die;
             $cmd = "C:\php83\php.exe \"$worker\" "
-                . escapeshellarg($id) . " "
-                . escapeshellarg(realpath(__DIR__ . "/../app/")) . " "
+                . escapeshellarg($jobId) . " "
+                . escapeshellarg($baseDir) . " "
                 . escapeshellarg($sessionEncoded) . " "
                 . escapeshellarg($json);
 
@@ -107,8 +116,13 @@ switch ($uri) {
         }
 
         return_api(200, '', [
-            "jobId" => $id
+            "jobId" => $jobId
         ]);
+        break;
+
+    case 'modelo/getModeloColunas':
+        require $baseDir . 'ModeloController.php';
+        $explodeUri[1]($data);
         break;
     // ==============================================
 

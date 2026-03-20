@@ -30,23 +30,25 @@ register_shutdown_function(function () {
    PEGANDO PARÂMETROS — AGORA NA ORDEM CORRETA
    =============================================================== */
 
-$jobId = $argv[1] ?? null;
-$baseDir = rtrim($argv[2] ?? "", "\\/") . DIRECTORY_SEPARATOR;
+$jobId = isset($debug) ? $jobId : $argv[1] ?? null;
+$baseDir = isset($debug) ? rtrim($baseDir ?? "", "\\/") . DIRECTORY_SEPARATOR : rtrim($argv[2] ?? "", "\\/") . DIRECTORY_SEPARATOR;
 
-$sessionRaw = $argv[3] ?? "";
-$_SESSION = json_decode(base64_decode($sessionRaw), true);
+$sessionRaw = isset($debug) ? $sessionEncoded : $argv[3] ?? "";
+$session = json_decode(base64_decode($sessionRaw), true);
+$nomeCompany = $session['company']['nome'] ?? "";
 
-$data = json_decode(base64_decode($argv[4] ?? ""), true);
+// debugLog("SESSION RECEBIDA: " . print_r($session, true));
+
+$data = isset($debug) ? json_decode(base64_decode($json)) : json_decode(base64_decode($argv[4] ?? ""), true);
 
 // debugLog("jobId: " . var_export($jobId, true));
 // debugLog("baseDir recebido: " . var_export($baseDir, true));
 // debugLog("_SESSION decodificada: " . print_r($_SESSION, true));
 
 if (!$jobId) {
-    // debugLog("ERRO: jobId não informado. Encerrando.");
+    debugLog("ERRO: jobId não informado. Encerrando.");
     die("ERRO: jobId não informado.\n");
 }
-
 
 $statusFile = $baseDir . '/Jobs/status/status.json';
 
@@ -88,8 +90,9 @@ require $baseDir . '/Controller/ModeloController.php';
    EXECUÇÃO DA ROTINA PRINCIPAL
    =============================================================== */
 processaArquivo(
-    $data,
+    (array)$data,
     function ($pct, $msg = "") use ($statusFile) {
         setProgress($statusFile, $pct, $msg);
-    }
+    },
+    $nomeCompany
 );

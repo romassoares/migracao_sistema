@@ -9,6 +9,8 @@ var id_concorrente = ""
 var id_tipo_arquivo = ""
 var modelo_id = ""
 
+var functName = ""
+
 $(document).ready(async function () {
     load(true);
     $('#input_layout_coluna').select2({
@@ -31,10 +33,12 @@ $(document).ready(async function () {
         dispararEventoEmSelect(document.querySelector("#concorrente_id"), modelo.id_concorrente)
 
         setTimeout(() => {
+            console.log('setTimeout modelo_id')
             dispararEventoEmSelect(document.querySelector("#modelo_id"), modelo.id_modelo)
-        }, 400)
+        }, 500)
 
         setTimeout(async () => {
+            console.log('EditVinculacaoArquivo')
             var resultado = await method_post('/conversao/EditVinculacaoArquivo', {
                 id_modelo: modelo.id_modelo,
                 id_layout: modelo.id_layout,
@@ -47,7 +51,7 @@ $(document).ready(async function () {
             id_tipo_arquivo = modelo.id_tipo_arquivo
 
             prepara_variaveis_e_campos(resultado)
-        }, 700)
+        }, 800)
 
         load(false);
         exibe_btn_duplica_modelo(false)
@@ -136,6 +140,7 @@ document.querySelector("#arquivo").addEventListener('change', async function (e)
 })
 
 async function lerArquivo(arquivo, modelo_id) {
+    // console.log(Date().toLocaleTimeString() + ' ler aquivo');
     // var id_concorrente = document.querySelector("#concorrente_id").value
     // id_layout = document.querySelector("#layout_id").value
     load(true)
@@ -159,6 +164,8 @@ async function lerArquivo(arquivo, modelo_id) {
 
 function prepara_variaveis_e_campos(resultado) {
     load(true)
+    functName = 'prepara_variaveis_e_campos'
+    // console.log(Date().toLocaleTimeString() + ' prepara_variaveis_e_campos');
     modelo = resultado.data.modelo
 
     if (modelo.status == 'P') {
@@ -177,25 +184,27 @@ function prepara_variaveis_e_campos(resultado) {
     modelos_colunas = Object.entries(resultado.data.modelos_colunas)
     montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, convertidosHeaders)
 
-    modelos_colunas.forEach((el) => {
-        const el_select = document.querySelector("#select_layout_coluna_" + el[1].id_layout_coluna);
-        if (!el_select) return;
+    // modelos_colunas.forEach((el) => {
+    //     const el_select = document.querySelector("#select_layout_coluna_" + el[1].id_layout_coluna);
+    //     if (!el_select) return;
 
-        const valor = el[1].descricao_coluna;
+    //     const valor = el[1].descricao_coluna;
 
-        const oldOnChange = el_select.onchange;
-        el_select.onchange = null;
+    //     const oldOnChange = el_select.onchange;
+    //     el_select.onchange = null;
 
-        $(el_select).val(valor).trigger('change.select2');
+    //     $(el_select).val(valor).trigger('change.select2');
 
-        el_select.onchange = oldOnChange;
-    });
-    atualizaColunas()
+    //     el_select.onchange = oldOnChange;
+    // });
+    // atualizaColunas()
     load(false)
 }
 
 document.querySelector("#modelo_id").addEventListener("change", function (e) {
     e.preventDefault()
+    functName = 'change modelo'
+    // console.log(Date().toLocaleTimeString() + ' change modelo');
     load(true)
     const selectedOption = this.options[this.selectedIndex];
     document.querySelector("#tipoArquivoInputGroup").textContent = selectedOption.getAttribute('descr_tipo_arquivo')
@@ -212,6 +221,12 @@ document.querySelector("#modelo_id").addEventListener("change", function (e) {
 
     exibe_btn_duplica_modelo(true)
     exibe_btn_e_input_arquivo(true)
+
+    const btn_duplica_modelo = document.querySelector('#btn-duplica-modelo')
+
+    btn_duplica_modelo.onclick = () => {
+        abrirModalDuplicaModelo(this.value)
+    }
     load(false)
 })
 
@@ -234,6 +249,8 @@ function exibe_btn_duplica_modelo(action) {
 var class_input_form_control = ' form-control '
 document.querySelector("#concorrente_id").addEventListener('change', async function (e) {
     e.preventDefault()
+    functName = 'change concorrente'
+    // console.log(Date().toLocaleTimeString() + ' change concorrente');
     load(true)
     document.querySelector("#tipoArquivoInputGroup").textContent = '?'
     exibe_btn_e_input_arquivo(false)
@@ -259,6 +276,8 @@ document.querySelector("#concorrente_id").addEventListener('change', async funct
 
 document.querySelector("#id_form_modelo").addEventListener("submit", async function (e) {
     e.preventDefault()
+    functName = 'change form modelo'
+    // console.log(Date().toLocaleTimeString() + ' change form modelo');
     load(true)
     var value_input_nome = document.querySelector("#nome_modelo_modal").value
     var value_input_layout_id = document.querySelector("#layout_id").value
@@ -321,6 +340,8 @@ document.querySelector("#id_form_modelo").addEventListener("submit", async funct
 
 document.querySelector("#id_form_upload_arquivo").addEventListener('submit', async function (e) {
     e.preventDefault()
+    functName = ''
+    // console.log(Date().toLocaleTimeString() + ' change form upload arquivo');
     load(true)
     exibe_btn_e_input_arquivo(false)
     exibe_btn_duplica_modelo(false)
@@ -369,8 +390,20 @@ async function startProgress() {
     }, 2500);
 }
 
+$('#modalEscolherCol').on('hidden.bs.modal', function () {
+    const modalBody = document.querySelector('#bodyModalEscolherCol');
+    const select = modalBody.querySelector('select[id^="select2_layout_coluna_"]');
+
+    if (select) {
+        $(select).select2('destroy');
+        select.remove();
+    }
+});
+
 function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, convertidosHeaders) {
     load(true)
+    functName = 'montaSelect'
+
     document.querySelector("#div_arquivo_convertido").className = 'overflow-auto d-flex gap-1 pb-3 div-tabela'
 
     const div_container = document.querySelector("#div_arquivo_convertido")
@@ -391,6 +424,8 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
         }
 
         convertidosHeaders.forEach((header, idx) => {
+            const base = Array.isArray(convertidos) ? convertidos : [convertidos];
+            const items = base.flatMap(row => getValue(row, header));
 
             const div_col = document.createElement("div")
             div_col.className = "col-3 d-flex flex-column align-items-stretch"
@@ -408,28 +443,54 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
             const div_input_grupo = document.createElement("div")
             div_input_grupo.className = "input-group input-group-sm mb-1"
 
-            const select_layout_coluna = document.createElement("select")
+            const select_layout_coluna = document.createElement("input")
             select_layout_coluna.id = "select_layout_coluna_" + idx
-            select_layout_coluna.className = "select2 form-control form-control-sm"
-            select_layout_coluna.onchange = function () {
-                salvaVinculacaoColunaConvetidoComLayoutColunas(this)
-                atualizaColunas();
+            select_layout_coluna.className = "form-control form-control-sm"
+
+            select_layout_coluna.onclick = () => {
+                $('#modalEscolherCol').modal('show')
+
+                const modalBody = document.querySelector('#bodyModalEscolherCol')
+
+                const select2Elelement = document.createElement("select")
+                select2Elelement.id = "select2_layout_coluna_" + idx
+                select2Elelement.className = "select2 form-control form-control-sm"
+
+                $(select2Elelement).on('select2:select', function (e) {
+                    salvaVinculacaoColunaConvetidoComLayoutColunas(select_layout_coluna, select2Elelement)
+                });
+
+                layout_colunas.forEach(([chave, valor]) => {
+                    const option = document.createElement('option');
+                    option.value = valor['id'];
+                    option.textContent = valor['nome_exibicao'];
+
+                    select2Elelement.appendChild(option);
+                });
+
+                modalBody.appendChild(select2Elelement)
+                select2Elelement.value = vinculos[header]
+                $('#' + select2Elelement.id).select2({
+                    dropdownParent: $('#modalEscolherCol'),
+                    theme: "bootstrap-5",
+                    placeholder: "Selecione ...",
+                    width: '100%',
+                    minimumResultsForSearch: 0
+                });
+
+                atualizaColunas()
             }
 
-            const optionSelec = document.createElement('option');
-            optionSelec.textContent = 'selecione ...';
-            select_layout_coluna.appendChild(optionSelec);
-
-            layout_colunas.forEach(([chave, valor]) => {
-                const option = document.createElement('option');
-                option.value = valor['id'];
-                option.textContent = valor['nome_exibicao'];
-                select_layout_coluna.appendChild(option);
-            });
-
             // Marcar o select se já houver vínculo
+            var tem_vinculo = false
             if (vinculos[header]) {
-                select_layout_coluna.value = vinculos[header];
+                tem_vinculo = true
+                layout_colunas.forEach(([chave, valor]) => {
+                    if (valor['id'] == vinculos[header]) {
+                        select_layout_coluna.value = valor['nome_exibicao'];
+                    }
+                })
+                select_layout_coluna.setAttribute('id_layout_coluna', vinculos[header]);
             }
 
             const div_input_grupo_append = document.createElement("div")
@@ -440,16 +501,25 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
             span_input_grupo_append.style.borderRadius = "0"
             span_input_grupo_append.style.cursor = "pointer"
             span_input_grupo_append.title = "Limpar"
-            span_input_grupo_append.innerHTML = "<i class='bi bi-eraser'></i>"
+            const icon = document.createElement("i");
+            icon.className = "bi bi-eraser";
+
+            if (tem_vinculo) {
+                icon.classList.add("fw-bold");      // negrito
+                icon.style.opacity = "1";           // normal
+            } else {
+                icon.style.opacity = "0.4";         // mais apagado
+            }
+            span_input_grupo_append.appendChild(icon);
             span_input_grupo_append.onclick = function () {
-                const ol_value = select_layout_coluna.value
-                const oldOnChange = select_layout_coluna.onchange;
-                select_layout_coluna.onchange = null;
-                select_layout_coluna.value = ''
-                $(select_layout_coluna).val('').trigger('change.select2');
-                removeColunaModelo(select_layout_coluna, ol_value)
-                atualizaColunas();
-                select_layout_coluna.onchange = oldOnChange;
+                // const ol_value = select_layout_coluna.value
+                // const oldOnChange = select_layout_coluna.onchange;
+                // select_layout_coluna.onchange = null;
+                // select_layout_coluna.value = ''
+                // $(select_layout_coluna).val('').trigger('change.select2');
+                removeColunaModelo(select_layout_coluna)
+                // atualizaColunas();
+                // select_layout_coluna.onchange = oldOnChange;
             }
             div_input_grupo_append.appendChild(span_input_grupo_append)
 
@@ -458,20 +528,25 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
             span_botao_depara.style.borderRadius = "0 4px 4px 0"
             span_botao_depara.style.cursor = "pointer"
             span_botao_depara.title = "Configurar De/Para"
-            span_botao_depara.innerHTML = "<i class='bi bi-journals'></i>"
+            // span_botao_depara.innerHTML = "<i class='bi bi-journals'></i>"
+            const iconDepara = document.createElement("i");
+            iconDepara.className = "bi bi-journals";
+
+            if (tem_vinculo) {
+                iconDepara.classList.add("fw-bold");      // negrito
+                iconDepara.style.opacity = "1";           // normal
+            } else {
+                iconDepara.style.opacity = "0.4";         // mais apagado
+            }
+            span_botao_depara.appendChild(iconDepara);
             span_botao_depara.onclick = function () {
-                window.location.href = '/conversao/depara?id_layout_coluna=' + select_layout_coluna.value + '&id_modelo=' + modelo.id_modelo + "&id_arquivo=" + id_arquivo;
+                window.location.href = '/conversao/depara?id_layout_coluna=' + select_layout_coluna.getAttribute('id_layout_coluna') + '&id_modelo=' + modelo.id_modelo + "&id_arquivo=" + id_arquivo;
             }
 
             div_input_grupo_append.appendChild(span_botao_depara);
             div_input_grupo.appendChild(select_layout_coluna)
             div_input_grupo.appendChild(div_input_grupo_append)
             div_col.appendChild(div_input_grupo)
-
-            $(select_layout_coluna).select2({
-                theme: "bootstrap-5",
-                placeholder: "Selecione ...",
-            });
 
             const tblValores = document.createElement("table")
             tblValores.className = "table table-sm mb-0"
@@ -480,9 +555,7 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
             const tbodyValores = document.createElement("tbody")
             tblValores.appendChild(tbodyValores)
 
-            const base = Array.isArray(convertidos) ? convertidos : [convertidos];
-            const items = base.flatMap(row => getValue(row, header));
-
+            // getValue aqui
             let count = 0;
 
             for (let i = 0; i < items.length;) {
@@ -543,7 +616,7 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
 
                 // Incremento controlado manualmente
                 if (count === 2) {
-                    i += 8; // pula 10
+                    i += 10; // pula 10
                     count = 0;
                 } else {
                     i++; // segue normalmente
@@ -559,8 +632,8 @@ function montaSelectsParaAssociacaoColunas(modelo, layout_colunas, convertidos, 
         load(false)
         alert('Nenhum header encontrado em convertidosHeaders')
     }
+
     load(false)
-    // document.querySelector("#load").style.display = 'none'
 }
 
 function showPopup(text) {
@@ -598,7 +671,10 @@ function showPopup(text) {
     document.body.append(overlay, box);
 }
 
+// Acessa valores aninhados em objetos/arrays usando notação de caminho
 function getValue(row, header) {
+    // console.log(Date().toLocaleTimeString() + ' get value');
+    functName = 'getValue'
     if (row == null) return [];
     const parts = Array.isArray(header) ? header : String(header).split('/').filter(Boolean);
     if (!parts.length) return Array.isArray(row) ? row : [row];
@@ -611,39 +687,35 @@ function getValue(row, header) {
     return next === undefined ? getValue(row, rest) : getValue(next, rest);
 }
 
-function atualizaColunas() {
-    load(true)
-    const allSelects = document.querySelectorAll('select[id^="select_layout_coluna_"]');
-    const valoresSelecionados = Array.from(allSelects)
-        .map(sel => sel.value)
-        .filter(value => value !== '');
+async function atualizaColunas() {
+    functName = 'atualizaCol'
 
+    result = await method_post('/modelo/getModeloColunas', { id_modelo: modelo.id_modelo });
+    const select = document.querySelector('select[id^="select2_layout_coluna_"]');
 
-    allSelects.forEach(currentSelect => {
-        Array.from(currentSelect.options).forEach(option => {
-            option.disabled = false;
-        });
+    if (!select) return;
+    // modelos_colunas = result.data.colunas.reduce((acc, curr) => {
+    const valoresVinculados = Object.values(result.data.colunas || {})
+        .filter(v => v && v.id_layout_coluna)
+        .map(v => String(v.id_layout_coluna));
 
-        valoresSelecionados.forEach(valor => {
-            if (currentSelect.value !== valor && valor !== '') {
-                const optionToDisable = Array.from(currentSelect.options).find(opt => opt.value === valor);
-                if (optionToDisable) {
-                    optionToDisable.disabled = true;
-                }
-            }
-        });
+    // reabilita tudo
+    $(select).find('option').prop('disabled', false);
 
-        $(currentSelect).select2('destroy');
-        $(currentSelect).select2({
-            theme: "bootstrap-5",
-            placeholder: "Selecione ...",
-            width: '100%',
-        });
+    // desabilita os vinculados
+    valoresVinculados.forEach(valor => {
+        const option = select.querySelector(`option[value="${valor}"]`);
+        if (option && (option.value !== select.value || valor == id_layout_coluna)) {
+            option.disabled = true;
+        }
     });
-    load(false)
+
+    // força o Select2 a atualizar
+    $(select).trigger('change.select2');
 }
 
 function normalizaValor(value) {
+    functName = 'normalizaValor'
     if (value == null || value === '') return 'null';
     if (typeof value === 'boolean') return String(value);
     if (Array.isArray(value)) return '[]';
@@ -652,10 +724,11 @@ function normalizaValor(value) {
     return value;
 }
 
-async function salvaVinculacaoColunaConvetidoComLayoutColunas(select) {
+async function salvaVinculacaoColunaConvetidoComLayoutColunas(input, select) {
     load(true)
+    functName = 'salvaVinculacao'
     const id_layout_coluna = select.value
-    const id_ref_col = select.id.replace("select_layout_coluna_", '')
+    const id_ref_col = input.id.replace("select_layout_coluna_", '')
 
     var descricao_coluna = document.querySelector("#input_convertido_header_" + id_ref_col).value;
 
@@ -667,22 +740,23 @@ async function salvaVinculacaoColunaConvetidoComLayoutColunas(select) {
 
     await method_post('/conversao/salvaVinculacaoConvertidoLayout', dataJsom)
 
-    atualizaTabelaComDePara(select);
+    atualizaTabelaComDePara(input, id_layout_coluna);
+    input.value = select.options[select.selectedIndex].text;
+    // atualizaColunas()
+    $('#modalEscolherCol').modal('hide')
     load(false)
 }
 
-
-async function atualizaTabelaComDePara(select) {
-    load(true);
-
-    const idRef = select.id.replace("select_layout_coluna_", '');
+async function atualizaTabelaComDePara(input, id_layout_coluna) {
+    functName = 'atualizaTabelaComDepara'
+    const idRef = input.id.replace("select_layout_coluna_", '');
     const tabela = document.querySelector(`#tbl_valores_convertidos_header_${idRef}`);
     const valores = Array.from(tabela?.querySelectorAll('tbody td') || [])
         .map(td => td.innerText)
         .filter(Boolean);
 
     const dataJson = {
-        id_layout_coluna: select.value,
+        id_layout_coluna: id_layout_coluna,
         id_modelo: document.querySelector('#modelo_id').value,
         descricao_coluna: document.querySelector(`#input_convertido_header_${idRef}`).value,
         valores
@@ -696,29 +770,34 @@ async function atualizaTabelaComDePara(select) {
             tds[i].innerText = novos[i];
         }
     }
-
-    load(false);
 }
 
-async function removeColunaModelo(select, ol_value) {
+async function removeColunaModelo(select) {
+    // async function removeColunaModelo(select, ol_value) {
     load(true)
-    const id_layout_coluna = select.value
+    functName = 'removeCOlunaModelo'
+    const id_layout_coluna = select.getAttribute('id_layout_coluna')
+    // const id_layout_coluna = select_layout_coluna.getAttribute('id_layout_coluna')
+    // console.log(select, 'id_layout_coluna' + id_layout_coluna)
     const id_ref_col = select.id.replace("select_layout_coluna_", '')
     var descricao_coluna = document.querySelector("#input_convertido_header_" + id_ref_col).value;
-
+    // console.log('descricao_coluna ' + id_ref_col, 'id_layout_coluna ' + id_layout_coluna)
     const dataJsom = {}
     dataJsom.descricao_coluna = descricao_coluna
-    dataJsom.id_layout_coluna = ol_value
+    dataJsom.id_layout_coluna = id_layout_coluna
     dataJsom.id_modelo = document.querySelector("#modelo_id").value
     dataJsom.id_concorrente = modelo.id_concorrente
 
     await method_post('/conversao/removeVinculacaoConvertidoLayout', dataJsom)
-
+    select.value = ''
+    select.removeAttribute('id_layout_coluna')
+    // atualizaColunas()
     load(false)
 }
 
 async function processaArquivo() {
     load(true)
+    functName = 'processaArquivos'
     exibe_btn_e_input_arquivo(false)
 
     modelo_id = document.querySelector("#modelo_id").value
@@ -799,16 +878,6 @@ function baixarArquivo(tipo) {
     });
 }
 
-document.querySelector("#modelo_id").addEventListener("change", function (e) {
-    e.preventDefault()
-    exibe_btn_duplica_modelo(true)
-    const btn_duplica_modelo = document.querySelector('#btn-duplica-modelo')
-
-    btn_duplica_modelo.onclick = () => {
-        abrirModalDuplicaModelo(this.value)
-    }
-})
-
 function abrirModalDuplicaModelo(id) {
     const selecionado = document.getElementById('modelo_id')
     const option = selecionado.options[selecionado.selectedIndex];
@@ -845,3 +914,13 @@ document.querySelector('#form-duplica-modelo').addEventListener('submit', async 
     }
     load(false);
 })
+
+
+// const observer = new PerformanceObserver(list => {
+//     list.getEntries().forEach(entry => {
+//         console.log(functName)
+//         console.log('Tarefa longa detectada:', entry.duration);
+//     });
+// });
+
+// observer.observe({ entryTypes: ['longtask'] });

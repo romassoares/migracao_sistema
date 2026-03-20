@@ -4,6 +4,7 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 require_once __DIR__ . '/ChunkReadFilter.php';
+require_once __DIR__ . '/ConvertWithPython.php';
 class ExcelToArrayService
 {
     private $php_office;
@@ -22,89 +23,93 @@ class ExcelToArrayService
 
     public function convert($arquivo)
     {
-        $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
-        $reader->setReadDataOnly(true);
+        // if (filesize($arquivo) > 18 * 1024 * 1024) { //18MB
+        return convertWithPython($arquivo, $this->depara_rules);
+        // }
 
-        /**
-         * 1) Descobrir o total de linhas SEM filtro
-         */
-        $info = $reader->listWorksheetInfo($arquivo);
-        $highestRow = $info[0]['totalRows'];
+        // $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+        // $reader->setReadDataOnly(true);
 
-        /**
-         * Validação correta
-         */
-        if ($highestRow <= 1) {
-            return [];
-        }
+        // /**
+        //  * 1) Descobrir o total de linhas SEM filtro
+        //  */
+        // $info = $reader->listWorksheetInfo($arquivo);
+        // $highestRow = $info[0]['totalRows'];
 
-        /**
-         * 2) Agora sim aplicar o ChunkReadFilter
-         */
-        $chunkSize = 500;
-        $filter = new ChunkReadFilter();
-        $reader->setReadFilter($filter);
+        // /**
+        //  * Validação correta
+        //  */
+        // if ($highestRow <= 1) {
+        //     return [];
+        // }
 
-        $headers = [];
-        $data = [];
+        // /**
+        //  * 2) Agora sim aplicar o ChunkReadFilter
+        //  */
+        // $chunkSize = 500;
+        // $filter = new ChunkReadFilter();
+        // $reader->setReadFilter($filter);
 
-        /**
-         * Ler cabeçalho
-         */
-        $filter->setRows(1, 1);
-        $spreadsheet = $reader->load($arquivo);
-        $sheet = $spreadsheet->getActiveSheet();
+        // $headers = [];
+        // $data = [];
 
-        foreach ($sheet->getRowIterator(1, 1) as $row) {
-            foreach ($row->getCellIterator() as $cell) {
-                $headers[] = trim((string) $cell->getValue());
-            }
-        }
+        // /**
+        //  * Ler cabeçalho
+        //  */
+        // $filter->setRows(1, 1);
+        // $spreadsheet = $reader->load($arquivo);
+        // $sheet = $spreadsheet->getActiveSheet();
 
-        $spreadsheet->disconnectWorksheets();
-        unset($spreadsheet);
+        // foreach ($sheet->getRowIterator(1, 1) as $row) {
+        //     foreach ($row->getCellIterator() as $cell) {
+        //         $headers[] = trim((string) $cell->getValue());
+        //     }
+        // }
 
-        /**
-         * 2) Ler dados em chunks
-         */
-        $startRow = 2;
+        // $spreadsheet->disconnectWorksheets();
+        // unset($spreadsheet);
 
-        while ($startRow <= $highestRow) {
+        // /**
+        //  * 2) Ler dados em chunks
+        //  */
+        // $startRow = 2;
 
-            $filter->setRows($startRow, $chunkSize);
-            $spreadsheet = $reader->load($arquivo);
-            $sheet = $spreadsheet->getActiveSheet();
+        // while ($startRow <= $highestRow) {
 
-            foreach ($sheet->getRowIterator($startRow) as $row) {
+        //     $filter->setRows($startRow, $chunkSize);
+        //     $spreadsheet = $reader->load($arquivo);
+        //     $sheet = $spreadsheet->getActiveSheet();
 
-                if ($row->getRowIndex() > $highestRow) {
-                    break;
-                }
+        //     foreach ($sheet->getRowIterator($startRow) as $row) {
 
-                $obj = [];
-                $colIndex = 0;
+        //         if ($row->getRowIndex() > $highestRow) {
+        //             break;
+        //         }
 
-                foreach ($row->getCellIterator() as $cell) {
-                    if (!isset($headers[$colIndex])) {
-                        break;
-                    }
+        //         $obj = [];
+        //         $colIndex = 0;
 
-                    $obj[$headers[$colIndex]] = $cell->getFormattedValue();
-                    $colIndex++;
-                }
+        //         foreach ($row->getCellIterator() as $cell) {
+        //             if (!isset($headers[$colIndex])) {
+        //                 break;
+        //             }
 
-                if (!empty(array_filter($obj))) {
-                    $data[] = $obj;
-                }
-            }
+        //             $obj[$headers[$colIndex]] = $cell->getFormattedValue();
+        //             $colIndex++;
+        //         }
 
-            $spreadsheet->disconnectWorksheets();
-            unset($spreadsheet);
+        //         if (!empty(array_filter($obj))) {
+        //             $data[] = $obj;
+        //         }
+        //     }
 
-            $startRow += $chunkSize;
-        }
+        //     $spreadsheet->disconnectWorksheets();
+        //     unset($spreadsheet);
 
-        return [$headers, $data];
+        //     $startRow += $chunkSize;
+        // }
+
+        // return [$headers, $data];
         // --------------------------------------------------------
         // --------------------------------------------------------
 

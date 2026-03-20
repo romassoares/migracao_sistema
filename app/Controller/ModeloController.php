@@ -2,9 +2,12 @@
 require_once __DIR__ . '/../core/includes.php';
 require_once __DIR__ . "/ArquivoController.php";
 
-ini_set('session.gc_maxlifetime', 4200);
-ini_set('session.cookie_lifetime', 4200);
-session_set_cookie_params(4200);
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.gc_maxlifetime', 4200);
+    ini_set('session.cookie_lifetime', 4200);
+    session_set_cookie_params(4200);
+    session_start();
+}
 
 global $arquivoCriticado;
 
@@ -172,7 +175,7 @@ function lerArquivoCsv($colunas, $arquivos, $modelo)
 /**
  * Processes a data file, converts it, and generates an Excel spreadsheet.
  */
-function processaArquivo($data, $update)
+function processaArquivo($data, $update, $nomeCompany)
 {
     global $layout_colunas_depara, $spreadsheet, $spreadsheetCriticas, $spreadsheetCertos, $sheet, $sheetCriticas, $sheetCertos, $ifExistErro;
 
@@ -180,8 +183,10 @@ function processaArquivo($data, $update)
 
     $update(0, "Iniciando...");
 
+
     $id_arquivo = $data['id_arquivo'];
     // Busca modelo
+
     $sql = "SELECT *, l.nome 
             FROM modelos AS m
             LEFT JOIN tipos_arquivos AS t ON m.id_tipo_arquivo = t.id_tipo_arquivo
@@ -189,6 +194,7 @@ function processaArquivo($data, $update)
             LEFT JOIN concorrentes AS c ON m.id_concorrente = c.id
             LEFT JOIN arquivos AS a ON m.id_modelo = a.id_modelo
             WHERE m.id_modelo = " . intval($data['id_modelo']) . " and m.id_layout = " . intval($data['id_layout']) . " and m.id_concorrente = " . intval($data['id_concorrente']) . " and m.id_tipo_arquivo = " . intval($data['id_tipo_arquivo']);
+
     $modelo = metodo_get($sql, 'migracao');
     $update(5, "Carregando modelo...");
     $modelo_colunas = metodo_all("SELECT * FROM modelos_colunas 
@@ -211,7 +217,7 @@ function processaArquivo($data, $update)
                         FROM layout_colunas AS l_col
                         LEFT JOIN layout_coluna_depara AS l_depara 
                             ON l_col.id = l_depara.id_layout_coluna
-                        WHERE l_col.id_layout = " . intval($data['id_layout']) . "
+                        WHERE l_col.ativo = 1 AND l_col.id_layout = " . intval($data['id_layout']) . "
                         ORDER BY l_col.id, l_depara.ordem", 'migracao');
     $dados = [];
     foreach ($result as $row) {
@@ -240,15 +246,20 @@ function processaArquivo($data, $update)
 
     $arquivo = metodo_get("SELECT * FROM arquivos WHERE id_arquivo = $id_arquivo", 'migracao');
 
-    $update(15, " Processando arquivo {$arquivo->nome_arquivo}...");
+    $update(15, " Processar arquivo {$arquivo->nome_arquivo}...");
     // $update(15, " company nome {$_SESSION['company']['nome']}...");
     // $update(15, " modelo nome {$modelo->nome_modelo}...");
     // $update(15, " modelo id_modelo {$modelo->id_modelo}...");
     // $update(15, " arquivo nome_arquivo {$modelo->nome_arquivo}...");
 
-    $arq_cli = "./assets/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/{$modelo->id_modelo}/{$arquivo->nome_arquivo}";
+    $arq_cli = "./assets/{$nomeCompany}/{$modelo->nome_modelo}/{$modelo->id_modelo}/{$arquivo->nome_arquivo}";
+    // writeInFileLog("Arquivo cli.: " . $arq_cli);
 
-    if (!file_exists($arq_cli)) die('Arquivo não encontrado.');
+    if (!file_exists($arq_cli)) {
+        writeInFileLog("Arquivo não encontrado.");
+        die('Arquivo não encontrado.');
+    }
+    $update(17, " Arquivo {$arquivo->nome_arquivo}... Encontrado. Convertendo...");
 
     $extension_file = pathinfo($arquivo->nome_arquivo, PATHINFO_EXTENSION);
 
@@ -259,34 +270,35 @@ function processaArquivo($data, $update)
     $update(30, " Arquivo convertido. Gerando Excel...");
     $qntItems = count($converted[1]);
 
-
-
     $sql = "UPDATE arquivos SET quantidade_registros = ?, status = ? WHERE id_cliente = ? and id_modelo = ?";
     insert_update($sql, "isii", [$qntItems, 'P', $arquivo->id_cliente, $arquivo->id_modelo], 'migracao');
 
     $headers = $converted[0] ?? [];
     $dados   = $converted[1] ?? [];
 
+    // writeInFileLog("pegou headers e dados");
 
-    // writeInFileLog(json_encode($dados));
-
-    $destinoDir = __DIR__ . "/../../assets/convertidos/{$_SESSION['company']['nome']}/{$modelo->nome_modelo}/" . $modelo->id_modelo . '/';
+    $destinoDir = __DIR__ . "/../../assets/convertidos/{$nomeCompany}/{$modelo->nome_modelo}/" . $modelo->id_modelo . '/';
 
     if (!is_dir($destinoDir) && !mkdir($destinoDir, 0755, true)) {
         throw new \RuntimeException("Não foi possível criar pasta de destino: {$destinoDir}");
     }
+    // writeInFileLog("verificou que diretorio existe");
 
     $spreadsheet = new Spreadsheet();
     $sheet = $spreadsheet->getActiveSheet();
 
-    $arquivoCriticado = $destinoDir . $_SESSION['company']['nome'] . '_' . $modelo->nome_modelo . "_" . $modelo->id_modelo . "_Criticados.txt";
+    $arquivoCriticado = $destinoDir . $nomeCompany . '_' . $modelo->nome_modelo . "_" . $modelo->id_modelo . "_Criticados.txt";
 
     createArquivoCriticadoLog($arquivoCriticado);
+    // writeInFileLog("criou arquivo excel e txt criticado");
 
     $update(50, "criando headers...");
     // Processa o array para excel
     $columnsUsed = setHeaderAndRetornColumns($modelo_colunas, $dados, $headers, $modelo,  $layout_colunas, $ifExistErro);
-
+    // var_dump($columnsUsed);
+    // writeInFileLog("pegou colunas usadas");
+    //     die;
     // Pega a primeira coluna como chave para identificar duplicatas
     $colunaChave1 = $columnsUsed[0]['keys'] ?? null;
     // ---------- Otimização: Processa grupos únicos para reduzir memória ----------
@@ -297,6 +309,7 @@ function processaArquivo($data, $update)
     $rowsRemoveCriticado = [];
     $rowsRemoveCorreto = [];
 
+    // writeInFileLog("antes do foreach dados unicos");
     // Agrupa dados únicos pela primeira coluna
     foreach ($dados as $key => $row) {
         $colunaChave1 = is_array($colunaChave1) ? $colunaChave1 : [$colunaChave1];
@@ -314,6 +327,7 @@ function processaArquivo($data, $update)
     }
     $update(60, "  Processando " . count($gruposUnicos) . " registros únicos...");
     // ---------- Escreve os grupos únicos na planilha ----------
+    writeInFileLog("antes do foreach do recursivo");
     $processedCount = 0;
     // $pctSomaStatus = count($gruposUnicos) / 25;
     // $contagemStatus = 60;
@@ -338,11 +352,11 @@ function processaArquivo($data, $update)
             gc_collect_cycles();
         }
     }
-
+    writeInFileLog("depois do foreach do recursivo");
     $update(85, "  Finalizando planilha...");
     // ---------- Salva arquivo ----------
     // Gera nome do arquivo com timestamp
-    $caminhoFinal = $destinoDir . $_SESSION['company']['nome'] . '_' . $modelo->nome_modelo . "_" . $modelo->id_modelo . "_Todos.xlsx";
+    $caminhoFinal = $destinoDir . $nomeCompany . '_' . $modelo->nome_modelo . "_" . $modelo->id_modelo . "_Todos.xlsx";
 
     // Salva arquivo com todos os registros
     $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
@@ -566,4 +580,26 @@ function createArquivoCriticadoLog($dir_name)
     $arquivoCriticado = $dir_name;
 
     file_put_contents($arquivoCriticado, '');
+}
+
+function getModeloColunas($data)
+{
+    $regras = [
+        'id_modelo' => ['required' => true, 'type' => 'int']
+    ];
+    $request = validateRequest($data, $regras);
+    $id_modelo = $request['dados']['id_modelo'];
+
+    $sql = "SELECT 
+            lc.id AS id_layout_coluna,
+            lc.nome_exibicao AS nome_layout_coluna
+            FROM modelos_colunas mc
+            LEFT JOIN layout_colunas lc ON mc.id_layout_coluna = lc.id 
+            WHERE mc.id_modelo = $id_modelo";
+
+    $colunas = metodo_all($sql, 'migracao');
+
+    if ($colunas || $colunas['id_modelo']) {
+        return return_api(200, 'Modelos encontrados', ['colunas' => $colunas]);
+    }
 }
